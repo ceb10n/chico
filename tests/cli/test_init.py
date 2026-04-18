@@ -1,0 +1,123 @@
+"""Tests for chico.cli.init and chico.cli.main (chico init command)."""
+
+from __future__ import annotations
+
+import json
+import logging
+from pathlib import Path
+
+import pytest
+import yaml
+from typer.testing import CliRunner
+
+from chico.cli.main import app
+from chico.core.log import _LOGGER_NAME
+
+runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def reset_chico_logger():
+    """Remove all handlers from the chico logger between tests."""
+    logger = logging.getLogger(_LOGGER_NAME)
+    logger.handlers.clear()
+    yield
+    logger.handlers.clear()
+
+
+@pytest.fixture()
+def chico_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Redirect all chico paths to a temp directory."""
+    monkeypatch.setattr("chico.cli.init.CHICO_DIR", tmp_path)
+    monkeypatch.setattr("chico.cli.init.CONFIG_FILE", tmp_path / "config.yaml")
+    monkeypatch.setattr("chico.cli.init.STATE_FILE", tmp_path / "state.json")
+    monkeypatch.setattr("chico.core.log.CHICO_DIR", tmp_path)
+    monkeypatch.setattr("chico.core.log.LOG_FILE", tmp_path / "chico.log")
+    return tmp_path
+
+
+class TestInitCommand:
+    def test_creates_chico_dir(self, chico_home: Path):
+        chico_home.rmdir()
+        result = runner.invoke(app, ["init"])
+        assert result.exit_code == 0
+        assert chico_home.exists()
+
+    def test_creates_config_file(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(app, ["init"])
+        assert (chico_home / "config.yaml").exists()
+
+    def test_creates_state_file(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(app, ["init"])
+        assert (chico_home / "state.json").exists()
+
+    def test_config_file_has_correct_structure(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(app, ["init"])
+        config = yaml.safe_load((chico_home / "config.yaml").read_text())
+        assert config["providers"] == []
+        assert config["sources"] == []
+        assert config["policy"]["strategy"] == "safe"
+
+    def test_state_file_has_correct_structure(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(app, ["init"])
+        state = json.loads((chico_home / "state.json").read_text())
+        assert state["status"] == "idle"
+        assert state["last_run"] is None
+        assert state["resources"] == []
+        assert state["versions"] == {}
+
+    def test_output_confirms_initialization(self, chico_home: Path):
+        chico_home.rmdir()
+        result = runner.invoke(app, ["init"])
+        assert "Initialized chico" in result.output
+
+    def test_output_shows_next_steps(self, chico_home: Path):
+        chico_home.rmdir()
+        result = runner.invoke(app, ["init"])
+        assert "Next steps" in result.output
+        assert "chico plan" in result.output
+        assert "chico apply" in result.output
+
+    def test_already_initialized_exits_cleanly(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(app, ["init"])
+        result = runner.invoke(app, ["init"])
+        assert result.exit_code == 0
+        assert "Already initialized" in result.output
+
+    def test_already_initialized_does_not_overwrite_config(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(app, ["init"])
+        config_file = chico_home / "config.yaml"
+        config_file.write_text("modified: true\n")
+        runner.invoke(app, ["init"])
+        assert config_file.read_text() == "modified: true\n"
+
+    def test_is_idempotent(self, chico_home: Path):
+        chico_home.rmdir()
+        r1 = runner.invoke(app, ["init"])
+        r2 = runner.invoke(app, ["init"])
+        assert r1.exit_code == 0
+        assert r2.exit_code == 0
+
+
+class TestMainApp:
+    def test_help_exits_cleanly(self):
+        result = runner.invoke(app, ["--help"])
+        assert result.exit_code == 0
+
+    def test_help_lists_init_command(self):
+        result = runner.invoke(app, ["--help"])
+        assert "init" in result.output
+
+    def test_init_help_exits_cleanly(self):
+        result = runner.invoke(app, ["init", "--help"])
+        assert result.exit_code == 0
+
+    def test_no_args_shows_help(self):
+        result = runner.invoke(app, [])
+        assert "Usage" in result.output
