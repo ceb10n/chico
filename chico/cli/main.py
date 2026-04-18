@@ -9,6 +9,7 @@ from __future__ import annotations
 import typer
 
 from chico.cli.init import init as _init
+from chico.cli.plan import plan as _plan
 from chico.core.log import setup_logging
 
 app = typer.Typer(
@@ -32,6 +33,17 @@ def init() -> None:
     state.json. Safe to run multiple times — exits cleanly if already set up.
     """
     _init()
+
+
+@app.command()
+def plan() -> None:
+    """Preview changes between desired and current state.
+
+    Fetches desired state from all configured sources and diffs it against
+    the current local state. Prints a summary of what would change without
+    writing anything to disk.
+    """
+    _plan()
 
 
 if __name__ == "__main__":  # pragma: no cover
