@@ -114,7 +114,9 @@ def compute_plan(config: Config) -> Plan:
             continue
 
         kiro_dir = _resolve_kiro_dir(provider_cfg.level)
-        provider = _build_provider(provider_cfg, fetch_result, source_cfg.source_prefix, kiro_dir)
+        provider = _build_provider(
+            provider_cfg, fetch_result, source_cfg.source_prefix, kiro_dir
+        )
 
         for resource in provider.list_resources():
             diff = resource.diff()

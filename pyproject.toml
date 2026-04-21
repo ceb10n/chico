@@ -1,6 +1,13 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["chico"]
+
 [project]
-name = "chico"
-version = "0.1.0"
+name = "chico-ai"
+version = "0.1.0b1"
 description = "Agent-native configuration control plane"
 readme = "README.md"
 requires-python = ">=3.11"

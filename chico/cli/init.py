@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import cast
 
 import typer
 import yaml
@@ -33,13 +34,21 @@ _DEFAULT_STATE: dict = {
 }
 
 
-def init() -> None:
+def init(
+    source: str | None = None,
+    repo: str | None = None,
+    path: str = "",
+    target: str = "kiro",
+    level: str = "global",
+    branch: str = "main",
+) -> None:
     """Initialise the chico home directory.
 
     Creates ``~/.chico/`` and writes two files:
 
-    * ``config.yaml`` — the user configuration, pre-populated with empty
-      ``providers`` and ``sources`` lists and a ``safe`` reconciliation policy.
+    * ``config.yaml`` — the user configuration. When source flags are
+      provided the config is pre-populated with a real provider and source;
+      otherwise empty lists are written.
     * ``state.json`` — the local state store, starting idle with no resources.
 
     If ``~/.chico/`` already exists this function prints a notice and exits
@@ -52,10 +61,43 @@ def init() -> None:
         typer.echo(f"Already initialized at {CHICO_DIR}")
         raise typer.Exit()
 
+    if source is not None:
+        if source != "github":
+            typer.echo(
+                f"Error: unsupported source type '{source}'. Supported: github",
+                err=True,
+            )
+            raise typer.Exit(1)
+        if repo is None:
+            typer.echo("Error: --repo is required when --source is specified", err=True)
+            raise typer.Exit(1)
+        if not path:
+            typer.echo("Error: --path is required when --source is specified", err=True)
+            raise typer.Exit(1)
+
     CHICO_DIR.mkdir(parents=True, exist_ok=True)
-    CONFIG_FILE.write_text(
-        yaml.dump(_DEFAULT_CONFIG, default_flow_style=False, sort_keys=False)
-    )
+
+    if source is not None:
+        repo = cast(str, repo)
+        source_name = repo.split("/")[-1]
+        config: dict = {
+            "providers": [{"name": target, "type": "kiro", "level": level}],
+            "sources": [
+                {
+                    "name": source_name,
+                    "type": source,
+                    "repo": repo,
+                    "path": path,
+                    "branch": branch,
+                    "target": target,
+                }
+            ],
+            "policy": {"strategy": "safe"},
+        }
+    else:
+        config = _DEFAULT_CONFIG
+
+    CONFIG_FILE.write_text(yaml.dump(config, default_flow_style=False, sort_keys=False))
     STATE_FILE.write_text(json.dumps(_DEFAULT_STATE, indent=2))
 
     logger.info(
@@ -70,8 +112,14 @@ def init() -> None:
     typer.echo(f"Initialized chico at {CHICO_DIR}")
     typer.echo(f"  config  {CONFIG_FILE}")
     typer.echo(f"  state   {STATE_FILE}")
+    if source is not None:
+        typer.echo(f"  source  {repo} ({source})")
     typer.echo("")
     typer.echo("Next steps:")
-    typer.echo(f"  1. Edit {CONFIG_FILE} to add providers and sources")
-    typer.echo("  2. Run `chico plan` to preview changes")
-    typer.echo("  3. Run `chico apply` to apply them")
+    if source is None:
+        typer.echo(f"  1. Edit {CONFIG_FILE} to add providers and sources")
+        typer.echo("  2. Run `chico plan` to preview changes")
+        typer.echo("  3. Run `chico apply` to apply them")
+    else:
+        typer.echo("  1. Run `chico plan` to preview changes")
+        typer.echo("  2. Run `chico apply` to apply them")

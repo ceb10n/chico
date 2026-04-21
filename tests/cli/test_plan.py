@@ -45,16 +45,14 @@ def config_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 class TestPlanNoConfig:
     def test_exits_with_error_when_no_config(self, chico_home, tmp_path, monkeypatch):
-        monkeypatch.setattr(
-            "chico.core.config.CONFIG_FILE", tmp_path / "missing.yaml"
-        )
+        monkeypatch.setattr("chico.core.config.CONFIG_FILE", tmp_path / "missing.yaml")
         result = runner.invoke(app, ["plan"])
         assert result.exit_code == 1
 
-    def test_shows_error_message_when_no_config(self, chico_home, tmp_path, monkeypatch):
-        monkeypatch.setattr(
-            "chico.core.config.CONFIG_FILE", tmp_path / "missing.yaml"
-        )
+    def test_shows_error_message_when_no_config(
+        self, chico_home, tmp_path, monkeypatch
+    ):
+        monkeypatch.setattr("chico.core.config.CONFIG_FILE", tmp_path / "missing.yaml")
         result = runner.invoke(app, ["plan"])
         assert "Config file not found" in result.output
 
@@ -81,7 +79,10 @@ class TestPlanNoChanges:
 
 class TestPlanWithChanges:
     def test_exits_cleanly_with_changes(self, chico_home, config_file, monkeypatch):
-        diff = Diff(change_type=ChangeType.ADD, resource_id="/home/user/.kiro/steering/product.md")
+        diff = Diff(
+            change_type=ChangeType.ADD,
+            resource_id="/home/user/.kiro/steering/product.md",
+        )
         test_plan = Plan(plan_id="plan-abc", changes=[diff], risk_level=RiskLevel.LOW)
         monkeypatch.setattr("chico.cli.plan.compute_plan", lambda _: test_plan)
         result = runner.invoke(app, ["plan"])
@@ -141,7 +142,9 @@ class TestPlanWithChanges:
 
 
 class TestPlanFetchError:
-    def test_exits_with_error_on_fetch_failure(self, chico_home, config_file, monkeypatch):
+    def test_exits_with_error_on_fetch_failure(
+        self, chico_home, config_file, monkeypatch
+    ):
         def _raise(_config):
             raise SourceFetchError("Network error")
 
@@ -149,7 +152,9 @@ class TestPlanFetchError:
         result = runner.invoke(app, ["plan"])
         assert result.exit_code == 1
 
-    def test_shows_error_message_on_fetch_failure(self, chico_home, config_file, monkeypatch):
+    def test_shows_error_message_on_fetch_failure(
+        self, chico_home, config_file, monkeypatch
+    ):
         def _raise(_config):
             raise SourceFetchError("Network error")
 

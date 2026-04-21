@@ -128,7 +128,11 @@ class GitHubSource:
             commit_sha = branch.commit.sha
 
             raw = repo.get_contents(self._path, ref=commit_sha)
-            contents = cast(list[ContentFile], raw) if isinstance(raw, list) else [cast(ContentFile, raw)]
+            contents = (
+                cast(list[ContentFile], raw)
+                if isinstance(raw, list)
+                else [cast(ContentFile, raw)]
+            )
 
             files = {
                 item.path: item.decoded_content.decode()

@@ -105,6 +105,188 @@ class TestInitCommand:
         assert r2.exit_code == 0
 
 
+# ── init with source flags ────────────────────────────────────────────────────
+
+
+class TestInitWithSource:
+    def test_exits_cleanly_with_source_flags(self, chico_home: Path):
+        chico_home.rmdir()
+        result = runner.invoke(
+            app,
+            ["init", "--source", "github", "--repo", "org/repo", "--path", "steering/"],
+        )
+        assert result.exit_code == 0
+
+    def test_writes_provider_to_config(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(
+            app,
+            ["init", "--source", "github", "--repo", "org/repo", "--path", "steering/"],
+        )
+        config = yaml.safe_load((chico_home / "config.yaml").read_text())
+        assert config["providers"][0]["type"] == "kiro"
+
+    def test_writes_source_to_config(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(
+            app,
+            ["init", "--source", "github", "--repo", "org/repo", "--path", "steering/"],
+        )
+        config = yaml.safe_load((chico_home / "config.yaml").read_text())
+        assert config["sources"][0]["repo"] == "org/repo"
+        assert config["sources"][0]["path"] == "steering/"
+
+    def test_source_name_derived_from_repo(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(
+            app,
+            ["init", "--source", "github", "--repo", "org/my-configs", "--path", "p/"],
+        )
+        config = yaml.safe_load((chico_home / "config.yaml").read_text())
+        assert config["sources"][0]["name"] == "my-configs"
+
+    def test_uses_default_branch(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(
+            app,
+            ["init", "--source", "github", "--repo", "org/repo", "--path", "p/"],
+        )
+        config = yaml.safe_load((chico_home / "config.yaml").read_text())
+        assert config["sources"][0]["branch"] == "main"
+
+    def test_uses_default_level(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(
+            app,
+            ["init", "--source", "github", "--repo", "org/repo", "--path", "p/"],
+        )
+        config = yaml.safe_load((chico_home / "config.yaml").read_text())
+        assert config["providers"][0]["level"] == "global"
+
+    def test_uses_default_target(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(
+            app,
+            ["init", "--source", "github", "--repo", "org/repo", "--path", "p/"],
+        )
+        config = yaml.safe_load((chico_home / "config.yaml").read_text())
+        assert config["sources"][0]["target"] == "kiro"
+
+    def test_respects_custom_branch(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(
+            app,
+            [
+                "init",
+                "--source",
+                "github",
+                "--repo",
+                "org/repo",
+                "--path",
+                "p/",
+                "--branch",
+                "develop",
+            ],
+        )
+        config = yaml.safe_load((chico_home / "config.yaml").read_text())
+        assert config["sources"][0]["branch"] == "develop"
+
+    def test_respects_custom_level(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(
+            app,
+            [
+                "init",
+                "--source",
+                "github",
+                "--repo",
+                "org/repo",
+                "--path",
+                "p/",
+                "--level",
+                "project",
+            ],
+        )
+        config = yaml.safe_load((chico_home / "config.yaml").read_text())
+        assert config["providers"][0]["level"] == "project"
+
+    def test_respects_custom_target(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(
+            app,
+            [
+                "init",
+                "--source",
+                "github",
+                "--repo",
+                "org/repo",
+                "--path",
+                "p/",
+                "--target",
+                "kiro-global",
+            ],
+        )
+        config = yaml.safe_load((chico_home / "config.yaml").read_text())
+        assert config["sources"][0]["target"] == "kiro-global"
+        assert config["providers"][0]["name"] == "kiro-global"
+
+    def test_fails_without_repo(self, chico_home: Path):
+        chico_home.rmdir()
+        result = runner.invoke(app, ["init", "--source", "github", "--path", "p/"])
+        assert result.exit_code == 1
+
+    def test_shows_error_without_repo(self, chico_home: Path):
+        chico_home.rmdir()
+        result = runner.invoke(app, ["init", "--source", "github", "--path", "p/"])
+        assert "--repo" in result.output
+
+    def test_fails_without_path(self, chico_home: Path):
+        chico_home.rmdir()
+        result = runner.invoke(
+            app, ["init", "--source", "github", "--repo", "org/repo"]
+        )
+        assert result.exit_code == 1
+
+    def test_shows_error_without_path(self, chico_home: Path):
+        chico_home.rmdir()
+        result = runner.invoke(
+            app, ["init", "--source", "github", "--repo", "org/repo"]
+        )
+        assert "--path" in result.output
+
+    def test_fails_for_unsupported_source_type(self, chico_home: Path):
+        chico_home.rmdir()
+        result = runner.invoke(
+            app, ["init", "--source", "s3", "--repo", "org/repo", "--path", "p/"]
+        )
+        assert result.exit_code == 1
+
+    def test_shows_error_for_unsupported_source_type(self, chico_home: Path):
+        chico_home.rmdir()
+        result = runner.invoke(
+            app, ["init", "--source", "s3", "--repo", "org/repo", "--path", "p/"]
+        )
+        assert "s3" in result.output
+
+    def test_shows_repo_in_output(self, chico_home: Path):
+        chico_home.rmdir()
+        result = runner.invoke(
+            app,
+            ["init", "--source", "github", "--repo", "org/repo", "--path", "steering/"],
+        )
+        assert "org/repo" in result.output
+
+    def test_already_initialized_with_flags_exits_cleanly(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(app, ["init"])
+        result = runner.invoke(
+            app,
+            ["init", "--source", "github", "--repo", "org/repo", "--path", "p/"],
+        )
+        assert result.exit_code == 0
+        assert "Already initialized" in result.output
+
+
 class TestMainApp:
     def test_help_exits_cleanly(self):
         result = runner.invoke(app, ["--help"])
