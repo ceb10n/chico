@@ -139,18 +139,31 @@ class GitHubSource:
                 extra={"branch": self._branch, "sha": commit_sha},
             )
 
+            files: dict[str, str] = {}
+            queue: list[ContentFile] = []
+
             raw = repo.get_contents(self._path, ref=commit_sha)
-            contents = (
+            queue.extend(
                 cast(list[ContentFile], raw)
                 if isinstance(raw, list)
                 else [cast(ContentFile, raw)]
             )
 
-            files = {
-                item.path: item.decoded_content.decode()
-                for item in contents
-                if item.type == "file"
-            }
+            while queue:
+                item = queue.pop()
+                if item.type == "dir":
+                    logger.info(
+                        "github.fetch.descending",
+                        extra={"dir": item.path},
+                    )
+                    nested = repo.get_contents(item.path, ref=commit_sha)
+                    queue.extend(
+                        cast(list[ContentFile], nested)
+                        if isinstance(nested, list)
+                        else [cast(ContentFile, nested)]
+                    )
+                else:
+                    files[item.path] = item.decoded_content.decode()
 
             logger.info(
                 "github.fetch.completed",

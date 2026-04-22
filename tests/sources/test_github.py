@@ -11,7 +11,12 @@ from chico.sources.github import GitHubSource, _gh_cli_token
 
 
 def _make_github_mock(commit_sha: str, files: dict[str, str]) -> MagicMock:
-    """Build a PyGithub mock tree that returns the given files."""
+    """Build a PyGithub mock that simulates the real directory structure.
+
+    Each call to ``get_contents(path)`` returns only the *immediate* children
+    of that path — files as ``type="file"`` and subdirectories as
+    ``type="dir"``, mirroring the real GitHub Contents API behaviour.
+    """
     github = MagicMock()
     repo = MagicMock()
     branch = MagicMock()
@@ -20,20 +25,35 @@ def _make_github_mock(commit_sha: str, files: dict[str, str]) -> MagicMock:
     repo.get_branch.return_value = branch
 
     def get_contents(path, ref=None):
+        path = path.rstrip("/")
+
         if path in files:
-            content = MagicMock()
-            content.type = "file"
-            content.path = path
-            content.decoded_content = files[path].encode()
-            return content
+            item = MagicMock()
+            item.type = "file"
+            item.path = path
+            item.decoded_content = files[path].encode()
+            return item
+
+        prefix = f"{path}/" if path else ""
+        seen: dict[str, str] = {}
+        for file_path in files:
+            if not file_path.startswith(prefix):
+                continue
+            remainder = file_path[len(prefix):]
+            if "/" in remainder:
+                child = prefix + remainder.split("/")[0]
+                seen[child] = "dir"
+            else:
+                seen[file_path] = "file"
+
         results = []
-        for file_path, file_content in files.items():
-            if file_path.startswith(path.rstrip("/") + "/") or path == "":
-                item = MagicMock()
-                item.type = "file"
-                item.path = file_path
-                item.decoded_content = file_content.encode()
-                results.append(item)
+        for child_path, child_type in seen.items():
+            item = MagicMock()
+            item.type = child_type
+            item.path = child_path
+            if child_type == "file":
+                item.decoded_content = files[child_path].encode()
+            results.append(item)
         return results
 
     repo.get_contents.side_effect = get_contents
@@ -155,6 +175,50 @@ class TestGitHubSourceFetch:
         assert isinstance(
             GitHubSource(name="s", repo="org/repo", path="configs/", token="t"), Source
         )
+
+    def test_fetches_files_inside_subdirectories(self):
+        mock_gh = _make_github_mock(
+            "abc123",
+            {
+                "root/steering/product.md": "# Product",
+                "root/steering/tech.md": "# Tech",
+                "root/skills/coding.md": "# Coding",
+            },
+        )
+        with patch("chico.sources.github.Github", return_value=mock_gh):
+            result = GitHubSource(
+                name="s", repo="org/repo", path="root", token="t"
+            ).fetch()
+        assert "root/steering/product.md" in result.files
+        assert "root/steering/tech.md" in result.files
+        assert "root/skills/coding.md" in result.files
+        assert len(result.files) == 3
+
+    def test_fetches_files_from_nested_directories(self):
+        mock_gh = _make_github_mock(
+            "sha999",
+            {
+                "root/a/b/deep.md": "deep content",
+                "root/a/shallow.md": "shallow content",
+            },
+        )
+        with patch("chico.sources.github.Github", return_value=mock_gh):
+            result = GitHubSource(
+                name="s", repo="org/repo", path="root", token="t"
+            ).fetch()
+        assert result.files["root/a/b/deep.md"] == "deep content"
+        assert result.files["root/a/shallow.md"] == "shallow content"
+
+    def test_does_not_include_directory_entries_in_files(self):
+        mock_gh = _make_github_mock(
+            "abc",
+            {"root/steering/product.md": "# Product"},
+        )
+        with patch("chico.sources.github.Github", return_value=mock_gh):
+            result = GitHubSource(
+                name="s", repo="org/repo", path="root", token="t"
+            ).fetch()
+        assert all("." in k.split("/")[-1] for k in result.files)
 
 
 class TestGitHubSourceTokenResolution:
