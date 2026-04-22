@@ -14,6 +14,7 @@ from chico.cli.apply import apply as _apply
 from chico.cli.diff import diff as _diff
 from chico.cli.init import init as _init
 from chico.cli.plan import plan as _plan
+from chico.cli.schedule import schedule_app
 from chico.cli.status import status as _status
 from chico.cli.sync import sync as _sync
 from chico.core.log import setup_logging
@@ -123,6 +124,9 @@ def sync() -> None:
     Equivalent to running ``chico plan`` followed by ``chico apply``.
     """
     _sync()
+
+
+app.add_typer(schedule_app)
 
 
 if __name__ == "__main__":  # pragma: no cover

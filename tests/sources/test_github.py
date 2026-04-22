@@ -39,7 +39,7 @@ def _make_github_mock(commit_sha: str, files: dict[str, str]) -> MagicMock:
         for file_path in files:
             if not file_path.startswith(prefix):
                 continue
-            remainder = file_path[len(prefix):]
+            remainder = file_path[len(prefix) :]
             if "/" in remainder:
                 child = prefix + remainder.split("/")[0]
                 seen[child] = "dir"
