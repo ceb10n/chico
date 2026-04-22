@@ -86,7 +86,11 @@ class KiroFileResource:
         """Return the current on-disk state, or ``{}`` if the file does not exist."""
         if not self._local_path.exists():
             return {}
-        return {"content": self._local_path.read_text(encoding="utf-8")}
+        try:
+            content = self._local_path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            content = self._local_path.read_text(encoding="latin-1")
+        return {"content": content}
 
     def diff(self) -> Diff:
         """Compute the diff between desired and current state.

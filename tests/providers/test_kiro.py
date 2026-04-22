@@ -44,6 +44,13 @@ class TestKiroFileResourceCurrentState:
         r = KiroFileResource("steering/product.md", "# New", local)
         assert r.current_state() == {"content": "# Existing content"}
 
+    def test_reads_latin1_encoded_file(self, tmp_path: Path):
+        local = tmp_path / "steering" / "product.md"
+        local.parent.mkdir(parents=True)
+        local.write_bytes("configuração".encode("latin-1"))
+        r = KiroFileResource("steering/product.md", "# New", local)
+        assert r.current_state() == {"content": "configuração"}
+
 
 class TestKiroFileResourceDiff:
     def test_diff_is_add_when_file_missing(self, tmp_path: Path):
