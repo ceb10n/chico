@@ -15,6 +15,7 @@ from chico.cli.diff import diff as _diff
 from chico.cli.init import init as _init
 from chico.cli.plan import plan as _plan
 from chico.cli.status import status as _status
+from chico.cli.sync import sync as _sync
 from chico.core.log import setup_logging
 
 app = typer.Typer(
@@ -113,6 +114,15 @@ def status() -> None:
     tracked source versions, and the total number of managed resources.
     """
     _status()
+
+
+@app.command()
+def sync() -> None:
+    """Fetch desired state and apply all changes in one step.
+
+    Equivalent to running ``chico plan`` followed by ``chico apply``.
+    """
+    _sync()
 
 
 if __name__ == "__main__":  # pragma: no cover

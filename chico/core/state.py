@@ -83,7 +83,7 @@ def load_state() -> State:
     if not STATE_FILE.exists():
         return State()
 
-    raw = json.loads(STATE_FILE.read_text())
+    raw = json.loads(STATE_FILE.read_text(encoding="utf-8"))
     return State(
         status=raw.get("status", "idle"),
         last_run=raw.get("last_run"),
@@ -112,5 +112,6 @@ def save_state(state: State) -> None:
                 "versions": state.versions,
             },
             indent=2,
-        )
+        ),
+        encoding="utf-8",
     )

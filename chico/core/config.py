@@ -179,7 +179,7 @@ def load_config() -> Config:
             "Run `chico init` to create the default configuration."
         )
 
-    raw = yaml.safe_load(CONFIG_FILE.read_text()) or {}
+    raw = yaml.safe_load(CONFIG_FILE.read_text(encoding="utf-8")) or {}
 
     providers = [_parse_provider(p) for p in raw.get("providers", [])]
     sources = [_parse_source(s) for s in raw.get("sources", [])]

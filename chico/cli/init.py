@@ -97,8 +97,8 @@ def init(
     else:
         config = _DEFAULT_CONFIG
 
-    CONFIG_FILE.write_text(yaml.dump(config, default_flow_style=False, sort_keys=False))
-    STATE_FILE.write_text(json.dumps(_DEFAULT_STATE, indent=2))
+    CONFIG_FILE.write_text(yaml.dump(config, default_flow_style=False, sort_keys=False), encoding="utf-8")
+    STATE_FILE.write_text(json.dumps(_DEFAULT_STATE, indent=2), encoding="utf-8")
 
     logger.info(
         "init.completed",
