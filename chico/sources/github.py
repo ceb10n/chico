@@ -163,7 +163,15 @@ class GitHubSource:
                         else [cast(ContentFile, nested)]
                     )
                 else:
-                    files[item.path] = item.decoded_content.decode()
+                    raw_bytes = item.decoded_content
+                    try:
+                        files[item.path] = raw_bytes.decode("utf-8")
+                    except UnicodeDecodeError:
+                        files[item.path] = raw_bytes.decode("latin-1")
+                        logger.info(
+                            "github.fetch.encoding_fallback",
+                            extra={"file": item.path, "encoding": "latin-1"},
+                        )
 
             logger.info(
                 "github.fetch.completed",

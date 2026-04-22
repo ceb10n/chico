@@ -137,6 +137,21 @@ class TestGitHubSourceFetch:
         assert result.files["configs/steering.md"] == "# Steering content"
         assert result.files["configs/AGENTS.md"] == "# Agents"
 
+    def test_decodes_latin1_files_when_not_utf8(self):
+        mock_gh = MagicMock()
+        repo = mock_gh.get_repo.return_value
+        repo.get_branch.return_value.commit.sha = "abc"
+        item = MagicMock()
+        item.type = "file"
+        item.path = "configs/readme.md"
+        item.decoded_content = "configuração".encode("latin-1")
+        repo.get_contents.return_value = item
+        with patch("chico.sources.github.Github", return_value=mock_gh):
+            result = GitHubSource(
+                name="s", repo="org/repo", path="configs/readme.md", token="t"
+            ).fetch()
+        assert result.files["configs/readme.md"] == "configuração"
+
     def test_uses_configured_branch(self):
         mock_gh = _make_github_mock("abc", {"configs/f.md": "x"})
         repo = mock_gh.get_repo.return_value
