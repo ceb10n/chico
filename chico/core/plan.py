@@ -20,6 +20,7 @@ Example usage::
 
 from __future__ import annotations
 
+import logging
 import uuid
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -30,6 +31,8 @@ from chico.core.resource import ChangeType, Diff
 from chico.core.source import FetchResult
 from chico.providers.kiro import KiroProvider
 from chico.sources.github import GitHubSource
+
+logger = logging.getLogger("chico")
 
 
 class RiskLevel(StrEnum):
@@ -106,20 +109,51 @@ def compute_plan(config: Config) -> Plan:
     all_changes: list[Diff] = []
 
     for source_cfg in config.sources:
+        logger.info(
+            "plan.source.processing",
+            extra={
+                "source": source_cfg.name,
+                "repo": source_cfg.repo,
+                "path": source_cfg.path,
+                "branch": source_cfg.branch,
+                "target": source_cfg.target,
+            },
+        )
         source = _build_source(source_cfg)
         fetch_result = source.fetch()
 
         provider_cfg = config.get_provider(source_cfg.target)
         if provider_cfg is None:
+            logger.warning(
+                "plan.provider.not_found",
+                extra={"source": source_cfg.name, "target": source_cfg.target},
+            )
             continue
 
         kiro_dir = _resolve_kiro_dir(provider_cfg.level)
+        logger.info(
+            "plan.provider.found",
+            extra={"provider": provider_cfg.name, "kiro_dir": str(kiro_dir)},
+        )
         provider = _build_provider(
             provider_cfg, fetch_result, source_cfg.source_prefix, kiro_dir
         )
 
-        for resource in provider.list_resources():
+        resources = provider.list_resources()
+        logger.info(
+            "plan.resources.listed",
+            extra={"source": source_cfg.name, "count": len(resources)},
+        )
+
+        for resource in resources:
             diff = resource.diff()
+            logger.info(
+                "plan.resource.diff",
+                extra={
+                    "resource_id": resource.resource_id,
+                    "change_type": str(diff.change_type),
+                },
+            )
             if diff.has_changes:
                 all_changes.append(diff)
 

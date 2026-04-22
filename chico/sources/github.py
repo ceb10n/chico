@@ -34,6 +34,7 @@ Example config
 
 from __future__ import annotations
 
+import logging
 import os
 import subprocess
 from typing import cast
@@ -44,6 +45,8 @@ from github.ContentFile import ContentFile
 from chico.core.source import FetchResult, SourceFetchError
 
 _DEFAULT_TOKEN_ENV = "GITHUB_TOKEN"
+
+logger = logging.getLogger("chico")
 
 
 def _gh_cli_token() -> str | None:
@@ -119,6 +122,10 @@ class GitHubSource:
             If the GitHub API call fails (network error, auth failure,
             missing repository, etc.).
         """
+        logger.info(
+            "github.fetch.started",
+            extra={"repo": self._repo, "path": self._path, "branch": self._branch},
+        )
         token = self._resolve_token()
 
         try:
@@ -126,6 +133,11 @@ class GitHubSource:
             repo = gh.get_repo(self._repo)
             branch = repo.get_branch(self._branch)
             commit_sha = branch.commit.sha
+
+            logger.info(
+                "github.fetch.branch",
+                extra={"branch": self._branch, "sha": commit_sha},
+            )
 
             raw = repo.get_contents(self._path, ref=commit_sha)
             contents = (
@@ -140,9 +152,23 @@ class GitHubSource:
                 if item.type == "file"
             }
 
+            logger.info(
+                "github.fetch.completed",
+                extra={
+                    "repo": self._repo,
+                    "version": commit_sha,
+                    "file_count": len(files),
+                    "files": list(files.keys()),
+                },
+            )
+
             return FetchResult(version=commit_sha, files=files)
 
         except Exception as exc:
+            logger.error(
+                "github.fetch.error",
+                extra={"repo": self._repo, "path": self._path, "error": str(exc)},
+            )
             raise SourceFetchError(str(exc)) from exc
 
     def _resolve_token(self) -> str | None:
@@ -152,10 +178,21 @@ class GitHubSource:
         are passed through to PyGithub, which works for public repositories.
         """
         if self._token:
+            logger.info("github.token.resolved", extra={"method": "explicit"})
             return self._token
 
         env_token = os.environ.get(self._token_env)
         if env_token:
+            logger.info(
+                "github.token.resolved",
+                extra={"method": "env", "var": self._token_env},
+            )
             return env_token
 
-        return _gh_cli_token()
+        cli_token = _gh_cli_token()
+        if cli_token:
+            logger.info("github.token.resolved", extra={"method": "gh_cli"})
+            return cli_token
+
+        logger.info("github.token.resolved", extra={"method": "none"})
+        return None

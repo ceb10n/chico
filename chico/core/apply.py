@@ -97,21 +97,56 @@ def execute_apply(config: Config) -> ApplyResult:
     to_apply: list[tuple[Resource, str]] = []
 
     for source_cfg in config.sources:
+        logger.info(
+            "apply.source.processing",
+            extra={
+                "source": source_cfg.name,
+                "repo": source_cfg.repo,
+                "path": source_cfg.path,
+                "branch": source_cfg.branch,
+                "target": source_cfg.target,
+            },
+        )
         source = _build_source(source_cfg)
         fetch_result = source.fetch()
         source_versions[source_cfg.name] = fetch_result.version
+        logger.info(
+            "apply.fetch.completed",
+            extra={"source": source_cfg.name, "version": fetch_result.version},
+        )
 
         provider_cfg = config.get_provider(source_cfg.target)
         if provider_cfg is None:
+            logger.warning(
+                "apply.provider.not_found",
+                extra={"source": source_cfg.name, "target": source_cfg.target},
+            )
             continue
 
         kiro_dir = _resolve_kiro_dir(provider_cfg.level)
+        logger.info(
+            "apply.provider.found",
+            extra={"provider": provider_cfg.name, "kiro_dir": str(kiro_dir)},
+        )
         provider = _build_provider(
             provider_cfg, fetch_result, source_cfg.source_prefix, kiro_dir
         )
 
-        for resource in provider.list_resources():
+        resources = provider.list_resources()
+        logger.info(
+            "apply.resources.listed",
+            extra={"source": source_cfg.name, "count": len(resources)},
+        )
+
+        for resource in resources:
             diff = resource.diff()
+            logger.info(
+                "apply.resource.diff",
+                extra={
+                    "resource_id": resource.resource_id,
+                    "change_type": str(diff.change_type),
+                },
+            )
             if diff.has_changes:
                 all_changes.append(diff)
                 to_apply.append((resource, source_cfg.name))
@@ -147,6 +182,7 @@ def _persist_state(
     source_versions: dict[str, str],
 ) -> None:
     """Write apply results and source versions to state."""
+    logger.info("apply.state.saving", extra={"plan_id": plan.plan_id})
     state = load_state()
 
     for source_name, version in source_versions.items():
@@ -171,3 +207,7 @@ def _persist_state(
     ]
 
     save_state(state)
+    logger.info(
+        "apply.state.saved",
+        extra={"plan_id": plan.plan_id, "versions": source_versions},
+    )

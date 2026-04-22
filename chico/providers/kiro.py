@@ -35,6 +35,7 @@ Example usage::
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from chico.core.resource import (
@@ -46,6 +47,8 @@ from chico.core.resource import (
     ResultStatus,
 )
 from chico.core.source import FetchResult
+
+logger = logging.getLogger("chico")
 
 
 class KiroFileResource:
@@ -202,6 +205,14 @@ class KiroProvider:
         for source_path, content in self._fetch_result.files.items():
             relative = source_path.removeprefix(self._source_prefix)
             local_path = self._kiro_dir / relative
+            logger.info(
+                "kiro.mapping",
+                extra={
+                    "source_path": source_path,
+                    "local_path": str(local_path),
+                    "prefix_stripped": self._source_prefix,
+                },
+            )
             resources.append(
                 KiroFileResource(
                     source_path=source_path,
