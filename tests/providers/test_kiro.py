@@ -126,14 +126,16 @@ class TestKiroFileResourceApply:
         assert result.resource_id == str(local)
 
     def test_apply_returns_error_on_permission_failure(self, tmp_path: Path):
+        from unittest.mock import patch
+
         local = tmp_path / "steering" / "product.md"
-        local.parent.mkdir(parents=True)
-        local.parent.chmod(0o444)  # read-only dir
         r = KiroFileResource("steering/product.md", "# x", local)
-        result = r.apply()
+        with patch.object(
+            type(local), "write_text", side_effect=PermissionError("Permission denied")
+        ):
+            result = r.apply()
         assert result.status == ResultStatus.ERROR
         assert result.message != ""
-        local.parent.chmod(0o755)  # restore so tmp_path cleanup works
 
     def test_apply_is_idempotent(self, tmp_path: Path):
         local = tmp_path / "steering" / "product.md"
