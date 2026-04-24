@@ -49,7 +49,7 @@ jobs:
           python-version: ${{ matrix.python }}
 
       - name: Run tests
-        run: uv run pytest
+        run: uv run --extra dev pytest
 
   build:
     name: Build
