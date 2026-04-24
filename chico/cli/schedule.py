@@ -1,58 +1,52 @@
 """Implementation of the ``chico schedule`` command group.
 
 Manages a recurring OS-level task that runs ``chico sync`` automatically.
-Currently supports Windows Task Scheduler; other platforms will be added
-in a future release.
+Uses Windows Task Scheduler on Windows and cron on macOS/Linux.
 """
 
 from __future__ import annotations
 
 import logging
+import sys
 
 import typer
 
-from chico.schedulers.windows import (
-    _STATUS_FIELDS,
-    SchedulerError,
-    install,
-    is_installed,
-    query,
-    uninstall,
-)
+from chico.schedulers import get_scheduler
 
 logger = logging.getLogger("chico")
 
 schedule_app = typer.Typer(
     name="schedule",
-    help="Manage the periodic sync schedule (Windows Task Scheduler).",
+    help="Manage the periodic sync schedule.",
     no_args_is_help=True,
 )
 
 
 @schedule_app.command("install")
 def install_cmd(
-    every: int = typer.Option(30, "--every", help="Run interval in minutes (1–1439)."),
+    every: int = typer.Option(30, "--every", help="Run interval in minutes."),
 ) -> None:
     """Install a scheduled task that runs ``chico sync`` automatically."""
+    sched = get_scheduler()
     try:
-        install(every)
-    except SchedulerError as exc:
+        sched.install(every)
+    except sched.SchedulerError as exc:
         typer.echo(f"Error: {exc}", err=True)
         logger.error("schedule.install.failed", extra={"error": str(exc)})
         raise typer.Exit(1) from exc
 
     typer.echo(f"Scheduled chico sync every {every} minute(s).")
-    typer.echo("  Task name: ChicoSync")
-    typer.echo(f"  Command:   {__import__('sys').executable} -m chico sync")
+    typer.echo(f"  Command: {sys.executable} -m chico sync")
     logger.info("schedule.install.completed", extra={"interval_minutes": every})
 
 
 @schedule_app.command("uninstall")
 def uninstall_cmd() -> None:
     """Remove the ChicoSync scheduled task."""
+    sched = get_scheduler()
     try:
-        uninstall()
-    except SchedulerError as exc:
+        sched.uninstall()
+    except sched.SchedulerError as exc:
         typer.echo(f"Error: {exc}", err=True)
         logger.error("schedule.uninstall.failed", extra={"error": str(exc)})
         raise typer.Exit(1) from exc
@@ -64,16 +58,16 @@ def uninstall_cmd() -> None:
 @schedule_app.command("status")
 def status_cmd() -> None:
     """Show whether the ChicoSync scheduled task is installed."""
-    if not is_installed():
+    sched = get_scheduler()
+    if not sched.is_installed():
         typer.echo(
             "No scheduled task found. Run `chico schedule install` to set one up."
         )
         return
 
-    info = query()
+    info = sched.query()
     typer.echo("ChicoSync is installed.\n")
 
     if info:
-        for field in _STATUS_FIELDS:
-            if field in info:
-                typer.echo(f"  {field}: {info[field]}")
+        for key, value in info.items():
+            typer.echo(f"  {key}: {value}")

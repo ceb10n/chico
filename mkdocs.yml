@@ -1,0 +1,70 @@
+site_name: chico
+site_description: Agent-native configuration control plane
+site_url: https://ceb10n.github.io/chico
+repo_url: https://github.com/ceb10n/chico
+repo_name: ceb10n/chico
+edit_uri: edit/master/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            show_source: true
+            show_root_heading: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quickstart.md
+      - Configuration: getting-started/configuration.md
+  - CLI Reference:
+      - chico init: cli/init.md
+      - chico plan: cli/plan.md
+      - chico apply: cli/apply.md
+      - chico sync: cli/sync.md
+      - chico diff: cli/diff.md
+      - chico status: cli/status.md
+      - chico schedule: cli/schedule.md
+  - API Reference:
+      - Core: api/core.md
+      - Providers: api/providers.md
+      - Sources: api/sources.md
+      - Schedulers: api/schedulers.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - attr_list
+  - md_in_html
