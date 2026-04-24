@@ -17,16 +17,20 @@ logger = logging.getLogger("chico")
 
 schedule_app = typer.Typer(
     name="schedule",
-    help="Manage the periodic sync schedule.",
+    help="Automatically sync on a schedule — no manual runs needed.",
     no_args_is_help=True,
 )
 
 
 @schedule_app.command("install")
 def install_cmd(
-    every: int = typer.Option(30, "--every", help="Run interval in minutes."),
+    every: int = typer.Option(30, "--every", help="How often to sync, in minutes."),
 ) -> None:
-    """Install a scheduled task that runs ``chico sync`` automatically."""
+    """Run chico-ai sync automatically on a schedule.
+
+    Uses cron on macOS and Linux, and Windows Task Scheduler on Windows.
+    Default interval is every 30 minutes. Pass --every to change it.
+    """
     sched = get_scheduler()
     try:
         sched.install(every)
@@ -42,7 +46,7 @@ def install_cmd(
 
 @schedule_app.command("uninstall")
 def uninstall_cmd() -> None:
-    """Remove the ChicoSync scheduled task."""
+    """Stop automatic syncing by removing the scheduled task."""
     sched = get_scheduler()
     try:
         sched.uninstall()
@@ -57,7 +61,7 @@ def uninstall_cmd() -> None:
 
 @schedule_app.command("status")
 def status_cmd() -> None:
-    """Show whether the ChicoSync scheduled task is installed."""
+    """Show whether automatic syncing is active and its current interval."""
     sched = get_scheduler()
     if not sched.is_installed():
         typer.echo(

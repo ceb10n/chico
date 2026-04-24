@@ -230,6 +230,34 @@ class TestInitWithSource:
         assert config["sources"][0]["target"] == "kiro-global"
         assert config["providers"][0]["name"] == "kiro-global"
 
+    def test_defaults_source_prefix_to_path(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(
+            app,
+            ["init", "--source", "github", "--repo", "org/repo", "--path", "steering/"],
+        )
+        config = yaml.safe_load((chico_home / "config.yaml").read_text())
+        assert config["sources"][0]["source_prefix"] == "steering/"
+
+    def test_respects_custom_source_prefix(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(
+            app,
+            [
+                "init",
+                "--source",
+                "github",
+                "--repo",
+                "org/repo",
+                "--path",
+                "steering/",
+                "--source-prefix",
+                "steering/subdir/",
+            ],
+        )
+        config = yaml.safe_load((chico_home / "config.yaml").read_text())
+        assert config["sources"][0]["source_prefix"] == "steering/subdir/"
+
     def test_fails_without_repo(self, chico_home: Path):
         chico_home.rmdir()
         result = runner.invoke(app, ["init", "--source", "github", "--path", "p/"])

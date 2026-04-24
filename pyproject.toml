@@ -7,7 +7,7 @@ packages = ["chico"]
 
 [project]
 name = "chico-ai"
-version = "0.1.0b1"
+version = "1.0.0"
 description = "Agent-native configuration control plane"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.scripts]
-chico = "chico.cli.main:app"
+chico-ai = "chico.cli.main:app"
 
 [project.optional-dependencies]
 dev = [

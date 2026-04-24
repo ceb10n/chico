@@ -2,53 +2,44 @@
 
 ## 1. Initialize
 
-```bash
-chico init
-```
-
-This creates `~/.chico/config.yaml` with a sample configuration.
-
-## 2. Edit the config
-
-```yaml
-sources:
-  - name: my-repo
-    type: github
-    repo: my-org/my-repo
-    branch: main
-    path: config/
-    source_prefix: config/
-
-providers:
-  - name: kiro
-    type: kiro
-    target: my-repo
-```
-
-## 3. Plan
+Pass all options to pre-populate the config in one step:
 
 ```bash
-chico plan
+chico-ai init \
+  --source github \
+  --repo Chico-inc/agents-patterns \
+  --path patterns \
+  --source-prefix patterns/ \
+  --target kiro \
+  --branch master
 ```
 
-Preview what files will be synced.
+This creates `~/.chico/config.yaml` ready to use. No manual editing needed.
 
-## 4. Apply
+## 2. Plan
 
 ```bash
-chico apply
+chico-ai plan
+```
+
+Preview what files will be synced without writing anything to disk.
+
+## 3. Apply
+
+```bash
+chico-ai apply
 ```
 
 Download and apply the changes.
 
-## 5. Sync (plan + apply in one step)
+## 4. Sync (plan + apply in one step)
 
 ```bash
-chico sync
+chico-ai sync
 ```
 
-## 6. Schedule automatic syncs
+## 5. Schedule automatic syncs
 
 ```bash
-chico schedule install --every 30
+chico-ai schedule install --every 30
 ```

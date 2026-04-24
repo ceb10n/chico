@@ -6,17 +6,18 @@ chico reads its configuration from `~/.chico/config.yaml`.
 
 ```yaml
 sources:
-  - name: my-repo
+  - name: agents-patterns
     type: github
-    repo: my-org/my-repo
-    branch: main
-    path: ai-config/
-    source_prefix: ai-config/
+    repo: Chico-inc/agents-patterns
+    branch: master
+    path: patterns
+    source_prefix: patterns/
+    target: kiro
 
 providers:
   - name: kiro
     type: kiro
-    target: my-repo
+    level: global
 ```
 
 ## Sources
@@ -28,7 +29,8 @@ providers:
 | `repo` | string | GitHub repository in `owner/repo` format |
 | `branch` | string | Branch to sync from |
 | `path` | string | Path inside the repo to sync |
-| `source_prefix` | string | Prefix to strip when mapping to the local path |
+| `source_prefix` | string | Prefix to strip when mapping to the local path. Defaults to `path` |
+| `target` | string | Provider name this source feeds into |
 
 ## Providers
 
@@ -36,4 +38,4 @@ providers:
 |---|---|---|
 | `name` | string | Unique name for this provider |
 | `type` | string | Provider type (`kiro`) |
-| `target` | string | Name of the source to sync from |
+| `level` | string | `global` for `~/.kiro/`, `project` for `.kiro/` |

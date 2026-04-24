@@ -2,7 +2,6 @@
 
 **chico** is an agent-native configuration control plane — a deterministic reconciliation engine for distributed configuration state, designed for both humans and agents.
 
-Think Terraform, but for agent configuration ecosystems: prompts, tools, agents.
 
 ## Features
 

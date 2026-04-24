@@ -38,6 +38,7 @@ def init(
     source: str | None = None,
     repo: str | None = None,
     path: str = "",
+    source_prefix: str = "",
     target: str = "kiro",
     level: str = "global",
     branch: str = "main",
@@ -88,6 +89,7 @@ def init(
                     "type": source,
                     "repo": repo,
                     "path": path,
+                    "source_prefix": source_prefix or path,
                     "branch": branch,
                     "target": target,
                 }

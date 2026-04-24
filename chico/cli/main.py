@@ -20,15 +20,15 @@ from chico.cli.sync import sync as _sync
 from chico.core.log import setup_logging
 
 app = typer.Typer(
-    name="chico",
-    help="Agent-native configuration control plane.",
+    name="chico-ai",
+    help="Sync agent configuration files from GitHub to your local environment.",
     no_args_is_help=True,
 )
 
 
 @app.callback()
 def callback() -> None:
-    """chico — reconcile agent configuration state across environments."""
+    """chico-ai — keep your AI agent configuration in sync with a GitHub repository."""
     setup_logging()
 
 
@@ -48,6 +48,13 @@ def init(
             "--path", help="Directory path inside the repository to fetch from."
         ),
     ] = "",
+    source_prefix: Annotated[
+        str,
+        typer.Option(
+            "--source-prefix",
+            help="Prefix to strip from source paths when mapping to local files. Defaults to --path.",
+        ),
+    ] = "",
     target: Annotated[
         str,
         typer.Option("--target", help="Provider name to sync into."),
@@ -63,65 +70,72 @@ def init(
         typer.Option("--branch", help="Branch to read from."),
     ] = "main",
 ) -> None:
-    """Initialize chico in ~/.chico/.
+    """Set up chico-ai for the first time.
 
-    Creates the chico home directory with a config.yaml and an empty
-    state.json. Pass --source, --repo, and --path to pre-populate the config
-    with a real source and provider. Safe to run multiple times — exits
-    cleanly if already set up.
+    Creates ~/.chico/config.yaml and ~/.chico/state.json. Pass --source,
+    --repo, and --path to generate a ready-to-use config pointing at your
+    GitHub repository. Safe to run more than once — exits cleanly if already
+    initialized.
     """
     _init(
-        source=source, repo=repo, path=path, target=target, level=level, branch=branch
+        source=source,
+        repo=repo,
+        path=path,
+        source_prefix=source_prefix,
+        target=target,
+        level=level,
+        branch=branch,
     )
 
 
 @app.command()
 def plan() -> None:
-    """Preview changes between desired and current state.
+    """Preview which files would be added or updated — without touching anything.
 
-    Fetches desired state from all configured sources and diffs it against
-    the current local state. Prints a summary of what would change without
-    writing anything to disk.
+    Fetches the latest files from your configured GitHub repository and
+    compares them with what is already in ~/.kiro/. Prints a summary of
+    additions and updates. Nothing is written to disk.
     """
     _plan()
 
 
 @app.command()
 def apply() -> None:
-    """Apply changes between desired and current state.
+    """Download files from GitHub and write them to ~/.kiro/.
 
-    Fetches desired state from all configured sources, applies every change
-    to the local Kiro directory, and records the outcome in state.json.
+    Fetches the latest files from your configured GitHub repository and
+    writes every addition or update to the local Kiro directory. Records
+    the result in ~/.chico/state.json.
     """
     _apply()
 
 
 @app.command()
 def diff() -> None:
-    """Show field-level differences between desired and current state.
+    """Show the exact content differences for each file that would change.
 
-    Fetches desired state from all configured sources and prints a detailed
-    breakdown of each change. For modified resources, the before and after
-    value of every changed field is shown. Nothing is written to disk.
+    Like plan, but more detailed — shows the before and after content of
+    every file that would be added or updated. Nothing is written to disk.
     """
     _diff()
 
 
 @app.command()
 def status() -> None:
-    """Show the current chico state.
+    """Show the last sync result and which files are being managed.
 
-    Reads ~/.chico/state.json and prints a summary of the last apply run,
-    tracked source versions, and the total number of managed resources.
+    Reads ~/.chico/state.json and prints when the last apply ran, which
+    GitHub commit was last synced, and how many files are tracked.
     """
     _status()
 
 
 @app.command()
 def sync() -> None:
-    """Fetch desired state and apply all changes in one step.
+    """Sync now — fetch from GitHub and update ~/.kiro/ in one step.
 
-    Equivalent to running ``chico plan`` followed by ``chico apply``.
+    Equivalent to running ``chico-ai plan`` followed by ``chico-ai apply``.
+    Use this for one-shot syncs or when you don't need to review changes first.
     """
     _sync()
 
