@@ -20,7 +20,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v5
         with:
-          enable-caching: true
+          enable-cache: true
 
       - name: Deploy docs
         run: uv run --extra docs mkdocs gh-deploy --force
