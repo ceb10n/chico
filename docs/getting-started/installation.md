@@ -19,7 +19,7 @@ uv tool install chico-ai
 ## Verify
 
 ```bash
-chico --help
+chico-ai --help
 ```
 
 ## Environment variables

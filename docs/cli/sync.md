@@ -1,9 +1,9 @@
-# chico sync
+# chico-ai sync
 
 Plan and apply in a single step.
 
 ```bash
-chico sync
+chico-ai sync
 ```
 
-Equivalent to running `chico plan` followed by `chico apply`.
+Equivalent to running `chico-ai plan` followed by `chico-ai apply`.

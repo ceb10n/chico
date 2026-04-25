@@ -1,7 +1,7 @@
-# chico diff
+# chico-ai diff
 
 Show a detailed diff of pending changes.
 
 ```bash
-chico diff
+chico-ai diff
 ```
