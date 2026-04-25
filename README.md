@@ -1,7 +1,7 @@
 # chico
 
 <p align="center">
-  <img src="docs/assets/logo.png" alt="chico logo" width="400"/>
+  <img src="https://raw.githubusercontent.com/ceb10n/chico/master/docs/assets/logo.png" alt="chico logo" width="400"/>
 </p>
 
 <br/>
