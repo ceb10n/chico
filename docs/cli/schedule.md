@@ -1,12 +1,12 @@
-# chico schedule
+# chico-ai schedule
 
 Manage the periodic sync schedule.
 
 ## Install
 
 ```bash
-chico schedule install
-chico schedule install --every 15
+chico-ai schedule install
+chico-ai schedule install --every 15
 ```
 
 | Option | Default | Description |
@@ -18,11 +18,11 @@ Uses **cron** on macOS/Linux and **Windows Task Scheduler** on Windows.
 ## Uninstall
 
 ```bash
-chico schedule uninstall
+chico-ai schedule uninstall
 ```
 
 ## Status
 
 ```bash
-chico schedule status
+chico-ai schedule status
 ```

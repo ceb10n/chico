@@ -19,7 +19,7 @@ pip install chico-ai
 ## Quick example
 
 ```bash
-chico init
-chico plan
-chico apply
+chico-ai init
+chico-ai plan
+chico-ai apply
 ```
