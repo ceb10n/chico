@@ -19,7 +19,7 @@ chico-ai init [OPTIONS]
 | `--path` | — | Directory path inside the repository to fetch files from. Required when `--source` is set. |
 | `--source-prefix` | same as `--path` | Prefix stripped from each file's path when mapping it to the local target. Defaults to `--path` if not set. |
 | `--target` | `kiro` | Provider name to sync files into. |
-| `--level` | `global` | Kiro level: `global` writes to `~/.kiro/`, `project` writes to `.kiro/` in the current directory. |
+| `--level` | `global` | Kiro level: `global` writes to `~/.kiro/`, `project` writes to `.kiro/` in a project directory. When `project` is used, the current working directory is recorded in the config so that scheduled syncs always write to the correct location. |
 | `--branch` | `main` | Branch to read files from. |
 
 ## Examples

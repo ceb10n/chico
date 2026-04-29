@@ -172,6 +172,15 @@ providers:
 | `branch` | Branch to read from |
 | `target` | Provider name this source feeds into |
 
+## Provider fields
+
+| Field | Description |
+| :---- | :---------- |
+| `name` | Unique provider name |
+| `type` | Provider type (`kiro`) |
+| `level` | `global` for `~/.kiro/`, `project` for a specific project directory |
+| `path` | Absolute path to the project directory (project level only). Recorded automatically by `chico-ai init --level project`. Ensures scheduled syncs write to the correct location |
+
 ## 👩🏼‍⚖️ License
 
 This project is licensed under the terms of the [MIT license.](LICENSE)

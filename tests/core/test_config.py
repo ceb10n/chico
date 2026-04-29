@@ -92,6 +92,16 @@ class TestProviderConfig:
         p = ProviderConfig(name="kiro", type="kiro", level="project")
         assert p.level == "project"
 
+    def test_path_defaults_to_empty(self):
+        p = ProviderConfig(name="kiro", type="kiro")
+        assert p.path == ""
+
+    def test_path_stored_when_set(self):
+        p = ProviderConfig(
+            name="kiro", type="kiro", level="project", path="/my/project"
+        )
+        assert p.path == "/my/project"
+
 
 # ---------------------------------------------------------------------------
 # PolicyConfig
@@ -207,6 +217,27 @@ class TestLoadConfig:
         )
         config = load_config()
         assert config.providers[0].level == "global"
+        assert config.providers[0].path == ""
+
+    def test_loads_provider_with_path(self, config_file: Path):
+        _write_config(
+            config_file.parent,
+            {
+                "providers": [
+                    {
+                        "name": "kiro",
+                        "type": "kiro",
+                        "level": "project",
+                        "path": "/home/user/my-project",
+                    }
+                ],
+                "sources": [],
+                "policy": {"strategy": "safe"},
+            },
+        )
+        config = load_config()
+        assert config.providers[0].level == "project"
+        assert config.providers[0].path == "/home/user/my-project"
 
     def test_loads_source_defaults(self, config_file: Path):
         _write_config(
