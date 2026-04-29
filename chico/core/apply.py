@@ -207,7 +207,7 @@ def _persist_state(
             "message": r.message,
             "source": source_name,
         }
-        for r, source_name in zip(results, result_sources)
+        for r, source_name in zip(results, result_sources, strict=True)
     ]
 
     save_state(state)

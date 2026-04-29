@@ -69,7 +69,7 @@ def status() -> None:
         typer.echo(f"    resources: {len(resources)} ({ok} ok, {errors} error)")
 
     if untagged:
-        typer.echo(f"\n  (untagged)")
+        typer.echo("\n  (untagged)")
         typer.echo(f"    resources: {len(untagged)}")
 
     typer.echo("")
