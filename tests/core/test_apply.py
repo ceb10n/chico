@@ -333,6 +333,7 @@ class TestExecuteApply:
         assert len(saved["resources"]) == 1
         assert saved["resources"][0]["resource_id"] == "/some/file.md"
         assert saved["resources"][0]["status"] == "ok"
+        assert saved["resources"][0]["source"] == "s"
 
     def test_plan_id_is_uuid_format(self, state_file):
         result = execute_apply(_make_config())
