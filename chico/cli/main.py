@@ -10,6 +10,7 @@ from typing import Annotated
 
 import typer
 
+from chico.cli.add import add_app
 from chico.cli.apply import apply as _apply
 from chico.cli.diff import diff as _diff
 from chico.cli.init import init as _init
@@ -169,6 +170,7 @@ def sync(
     _sync(source=source)
 
 
+app.add_typer(add_app)
 app.add_typer(schedule_app)
 
 
