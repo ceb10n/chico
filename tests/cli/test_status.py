@@ -37,7 +37,7 @@ def state_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return sf
 
 
-# ── no state file ──────────────────────────────────────────────────────────────
+# ── no state file ─────────────────────────────────────────────────────────────
 
 
 class TestStatusNoState:
@@ -55,7 +55,7 @@ class TestStatusNoState:
 
     def test_shows_no_sources_when_empty(self, chico_home, state_file):
         result = runner.invoke(app, ["status"])
-        assert "no sources" in result.output.lower() or "Sources" in result.output
+        assert "no sources tracked" in result.output.lower()
 
 
 # ── with last run ─────────────────────────────────────────────────────────────
@@ -117,25 +117,11 @@ class TestStatusWithLastRun:
         assert "1" in result.output
 
 
-# ── with source versions ───────────────────────────────────────────────────────
+# ── with source versions ──────────────────────────────────────────────────────
 
 
 class TestStatusWithVersions:
     def test_shows_source_name(self, chico_home, state_file):
-        state_file.write_text(
-            json.dumps(
-                {
-                    "status": "idle",
-                    "last_run": None,
-                    "resources": [],
-                    "versions": {"my-source": "abc123"},
-                }
-            )
-        )
-        result = runner.invoke(app, ["status"])
-        assert "my-source" in result.output
-
-    def test_shows_source_version(self, chico_home, state_file):
         state_file.write_text(
             json.dumps(
                 {
@@ -147,7 +133,35 @@ class TestStatusWithVersions:
             )
         )
         result = runner.invoke(app, ["status"])
+        assert "my-source" in result.output
+
+    def test_shows_short_sha(self, chico_home, state_file):
+        state_file.write_text(
+            json.dumps(
+                {
+                    "status": "idle",
+                    "last_run": None,
+                    "resources": [],
+                    "versions": {"my-source": "abc123def456789abcdef"},
+                }
+            )
+        )
+        result = runner.invoke(app, ["status"])
         assert "abc123def456" in result.output
+
+    def test_shows_short_version_as_is(self, chico_home, state_file):
+        state_file.write_text(
+            json.dumps(
+                {
+                    "status": "idle",
+                    "last_run": None,
+                    "resources": [],
+                    "versions": {"my-source": "short"},
+                }
+            )
+        )
+        result = runner.invoke(app, ["status"])
+        assert "short" in result.output
 
     def test_shows_multiple_sources(self, chico_home, state_file):
         state_file.write_text(
@@ -164,8 +178,111 @@ class TestStatusWithVersions:
         assert "source-a" in result.output
         assert "source-b" in result.output
 
+    def test_shows_source_count(self, chico_home, state_file):
+        state_file.write_text(
+            json.dumps(
+                {
+                    "status": "idle",
+                    "last_run": None,
+                    "resources": [],
+                    "versions": {"source-a": "aaa", "source-b": "bbb"},
+                }
+            )
+        )
+        result = runner.invoke(app, ["status"])
+        assert "Sources (2)" in result.output
 
-# ── with resources ─────────────────────────────────────────────────────────────
+
+# ── per-source resource details ───────────────────────────────────────────────
+
+
+class TestStatusPerSourceResources:
+    def test_shows_resource_count_per_source(self, chico_home, state_file):
+        state_file.write_text(
+            json.dumps(
+                {
+                    "status": "idle",
+                    "last_run": None,
+                    "resources": [
+                        {"resource_id": "/a.md", "status": "ok", "source": "src-a"},
+                        {"resource_id": "/b.md", "status": "ok", "source": "src-a"},
+                        {"resource_id": "/c.md", "status": "ok", "source": "src-b"},
+                    ],
+                    "versions": {"src-a": "aaa", "src-b": "bbb"},
+                }
+            )
+        )
+        result = runner.invoke(app, ["status"])
+        assert "2 (2 ok, 0 error)" in result.output
+        assert "1 (1 ok, 0 error)" in result.output
+
+    def test_shows_error_count_per_source(self, chico_home, state_file):
+        state_file.write_text(
+            json.dumps(
+                {
+                    "status": "idle",
+                    "last_run": None,
+                    "resources": [
+                        {"resource_id": "/a.md", "status": "ok", "source": "src-a"},
+                        {"resource_id": "/b.md", "status": "error", "source": "src-a"},
+                    ],
+                    "versions": {"src-a": "aaa"},
+                }
+            )
+        )
+        result = runner.invoke(app, ["status"])
+        assert "1 ok" in result.output
+        assert "1 error" in result.output
+
+    def test_shows_total_resource_count(self, chico_home, state_file):
+        state_file.write_text(
+            json.dumps(
+                {
+                    "status": "idle",
+                    "last_run": None,
+                    "resources": [
+                        {"resource_id": "/a.md", "status": "ok", "source": "src-a"},
+                        {"resource_id": "/b.md", "status": "ok", "source": "src-b"},
+                    ],
+                    "versions": {"src-a": "aaa", "src-b": "bbb"},
+                }
+            )
+        )
+        result = runner.invoke(app, ["status"])
+        assert "Total resources: 2" in result.output
+
+    def test_handles_untagged_resources(self, chico_home, state_file):
+        state_file.write_text(
+            json.dumps(
+                {
+                    "status": "idle",
+                    "last_run": None,
+                    "resources": [
+                        {"resource_id": "/old.md", "status": "ok"},
+                    ],
+                    "versions": {"src-a": "aaa"},
+                }
+            )
+        )
+        result = runner.invoke(app, ["status"])
+        assert "untagged" in result.output
+
+    def test_source_with_no_resources_shows_zero(self, chico_home, state_file):
+        state_file.write_text(
+            json.dumps(
+                {
+                    "status": "idle",
+                    "last_run": None,
+                    "resources": [],
+                    "versions": {"src-a": "aaa"},
+                }
+            )
+        )
+        result = runner.invoke(app, ["status"])
+        assert "0 (0 ok, 0 error)" in result.output
+
+
+# ── with resources (legacy flat count) ────────────────────────────────────────
 
 
 class TestStatusWithResources:
@@ -176,10 +293,10 @@ class TestStatusWithResources:
                     "status": "idle",
                     "last_run": None,
                     "resources": [
-                        {"resource_id": "/file-a.md", "status": "ok"},
-                        {"resource_id": "/file-b.md", "status": "ok"},
+                        {"resource_id": "/file-a.md", "status": "ok", "source": "s"},
+                        {"resource_id": "/file-b.md", "status": "ok", "source": "s"},
                     ],
-                    "versions": {},
+                    "versions": {"s": "abc"},
                 }
             )
         )

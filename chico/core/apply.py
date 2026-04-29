@@ -158,9 +158,11 @@ def execute_apply(config: Config) -> ApplyResult:
     )
 
     results: list[Result] = []
-    for resource, _ in to_apply:
+    result_sources: list[str] = []
+    for resource, source_name in to_apply:
         result = resource.apply()
         results.append(result)
+        result_sources.append(source_name)
         if result.ok:
             logger.info(
                 "resource.apply.ok", extra={"resource_id": resource.resource_id}
@@ -171,7 +173,7 @@ def execute_apply(config: Config) -> ApplyResult:
                 extra={"resource_id": resource.resource_id, "detail": result.message},
             )
 
-    _persist_state(plan, results, source_versions)
+    _persist_state(plan, results, source_versions, result_sources)
 
     return ApplyResult(plan=plan, results=results)
 
@@ -180,6 +182,7 @@ def _persist_state(
     plan: Plan,
     results: list[Result],
     source_versions: dict[str, str],
+    result_sources: list[str],
 ) -> None:
     """Write apply results and source versions to state."""
     logger.info("apply.state.saving", extra={"plan_id": plan.plan_id})
@@ -202,8 +205,9 @@ def _persist_state(
             "resource_id": r.resource_id,
             "status": str(r.status),
             "message": r.message,
+            "source": source_name,
         }
-        for r in results
+        for r, source_name in zip(results, result_sources)
     ]
 
     save_state(state)
