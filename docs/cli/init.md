@@ -81,3 +81,14 @@ chico-ai apply   # apply the changes
 # or
 chico-ai sync    # plan + apply in one step
 ```
+
+## Adding sources and providers after init
+
+Use the `chico-ai add` command to append sources or providers to an existing config:
+
+```bash
+chico-ai add source --repo my-org/hooks-repo --path hooks --target kiro
+chico-ai add provider --name kiro-local --level project
+```
+
+See [chico add](../cli/add.md) for full details.
