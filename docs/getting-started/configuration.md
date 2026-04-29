@@ -42,5 +42,61 @@ operate on a single source (e.g. `chico-ai plan agents-patterns`).
 |---|---|---|
 | `name` | string | Unique name for this provider |
 | `type` | string | Provider type (`kiro`) |
-| `level` | string | `global` for `~/.kiro/`, `project` for `.kiro/` in a specific directory |
-| `path` | string | Absolute path to the project directory. Only used when `level` is `project`. When set, chico syncs into `{path}/.kiro/` regardless of the current working directory. Recorded automatically by `chico-ai init --level project` |
+| `level` | string | `global` for `~/.kiro/`, `project` for a specific directory |
+| `path` | string | Absolute path to the target directory. Only used when `level` is `project`. Files are synced directly into this path — no `.kiro/` is appended. Recorded automatically by `chico-ai init --level project` as `{cwd}/.kiro` |
+
+## Project-level example
+
+Sync specs from a GitHub repo into a project's `.kiro/` directory:
+
+```yaml
+sources:
+  - name: my-specs
+    type: github
+    repo: my-org/my-repo
+    branch: main
+    path: .kiro/specs
+    source_prefix: .kiro/
+    target: kiro-local
+
+providers:
+  - name: kiro-local
+    type: kiro
+    level: project
+    path: /home/user/my-project/.kiro
+```
+
+This syncs `.kiro/specs/design.md` from the repo to `/home/user/my-project/.kiro/specs/design.md`.
+
+The `path` field is the exact target directory — chico does not append `.kiro/` to it. This avoids double-nesting when the source files already live under `.kiro/` in the repository.
+
+## Multiple providers example
+
+You can mix global and project-level providers:
+
+```yaml
+providers:
+  - name: kiro
+    type: kiro
+    level: global
+
+  - name: kiro-local
+    type: kiro
+    level: project
+    path: /home/user/my-project/.kiro
+
+sources:
+  - name: steering
+    type: github
+    repo: my-org/config
+    path: steering
+    source_prefix: steering/
+    target: kiro
+
+  - name: project-specs
+    type: github
+    repo: my-org/config
+    path: .kiro/specs
+    source_prefix: .kiro/
+    target: kiro-local
+```

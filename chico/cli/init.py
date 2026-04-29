@@ -84,7 +84,7 @@ def init(
         source_name = repo.split("/")[-1]
         provider_entry: dict = {"name": target, "type": "kiro", "level": level}
         if level == "project":
-            provider_entry["path"] = str(Path.cwd())
+            provider_entry["path"] = str(Path.cwd() / ".kiro")
         config: dict = {
             "providers": [provider_entry],
             "sources": [

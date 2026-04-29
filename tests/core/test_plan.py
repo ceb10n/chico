@@ -147,11 +147,10 @@ class TestResolveKiroDir:
         cfg = ProviderConfig(name="kiro", type="kiro", level="project")
         assert _resolve_kiro_dir(cfg) == Path.cwd() / ".kiro"
 
-    def test_project_with_path_returns_configured_path(self, tmp_path):
-        cfg = ProviderConfig(
-            name="kiro", type="kiro", level="project", path=str(tmp_path)
-        )
-        assert _resolve_kiro_dir(cfg) == tmp_path / ".kiro"
+    def test_project_with_path_returns_configured_path_directly(self, tmp_path):
+        target = str(tmp_path / ".kiro")
+        cfg = ProviderConfig(name="kiro", type="kiro", level="project", path=target)
+        assert _resolve_kiro_dir(cfg) == Path(target)
 
     def test_global_ignores_path(self, tmp_path):
         cfg = ProviderConfig(

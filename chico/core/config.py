@@ -111,11 +111,13 @@ class ProviderConfig:
         ``"project"`` targets ``.kiro/`` in a specific project directory.
         Defaults to ``"global"``.
     path:
-        Absolute path to the project directory. Only used when ``level``
-        is ``"project"``. When set, chico syncs into ``{path}/.kiro/``
-        regardless of the current working directory. When omitted and
-        ``level`` is ``"project"``, falls back to the current working
-        directory.
+        Absolute path to the target directory. Only used when ``level``
+        is ``"project"``. When set, chico syncs files directly into this
+        path — no ``.kiro/`` suffix is appended. This gives the user full
+        control over the target directory and avoids double-nesting when
+        the source files already live under ``.kiro/`` in the repository.
+        When omitted and ``level`` is ``"project"``, falls back to
+        ``{cwd}/.kiro``.
     """
 
     name: str
