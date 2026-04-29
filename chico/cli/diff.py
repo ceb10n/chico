@@ -10,7 +10,7 @@ import logging
 
 import typer
 
-from chico.core.config import ConfigNotFoundError, load_config
+from chico.core.config import ConfigNotFoundError, ConfigValidationError, load_config
 from chico.core.plan import compute_plan
 from chico.core.resource import ChangeType
 
@@ -33,19 +33,22 @@ def _truncate(value: object) -> str:
     return text[:_TRUNCATE_AT] + "..."
 
 
-def diff() -> None:
+def diff(source: str | None = None) -> None:
     """Show field-level differences between desired and current state.
 
-    Fetches desired state from every configured source, diffs it against
-    the current local state, and prints a detailed breakdown of what would
-    change. For modified resources, the before and after value of each
-    changed field is shown. Nothing is written to disk.
+    Parameters
+    ----------
+    source:
+        Optional source name to scope the diff to. When ``None``, all
+        sources are diffed.
     """
-    logger.info("diff.started")
+    logger.info("diff.started", extra={"source_filter": source})
 
     try:
         config = load_config()
-    except ConfigNotFoundError as exc:
+        if source:
+            config = config.filter_by_source(source)
+    except (ConfigNotFoundError, ConfigValidationError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
 

@@ -157,6 +157,22 @@ class Config:
         """Return the source with the given name, or ``None``."""
         return next((s for s in self.sources if s.name == name), None)
 
+    def filter_by_source(self, source_name: str) -> Config:
+        """Return a new Config containing only the named source.
+
+        Raises
+        ------
+        ConfigValidationError
+            If no source with the given name exists.
+        """
+        filtered = [s for s in self.sources if s.name == source_name]
+        if not filtered:
+            available = ", ".join(s.name for s in self.sources) or "(none)"
+            raise ConfigValidationError(
+                f"Source {source_name!r} not found. Available sources: {available}"
+            )
+        return Config(providers=self.providers, sources=filtered, policy=self.policy)
+
 
 def load_config() -> Config:
     """Load and validate ``~/.chico/config.yaml``.

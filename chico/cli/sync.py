@@ -11,7 +11,7 @@ import logging
 import typer
 
 from chico.core.apply import execute_apply
-from chico.core.config import ConfigNotFoundError, load_config
+from chico.core.config import ConfigNotFoundError, ConfigValidationError, load_config
 from chico.core.resource import ChangeType, ResultStatus
 
 logger = logging.getLogger("chico")
@@ -29,18 +29,22 @@ _STATUS_LABEL: dict[str, str] = {
 }
 
 
-def sync() -> None:
+def sync(source: str | None = None) -> None:
     """Fetch desired state and apply all changes in one step.
 
-    Equivalent to running ``chico plan`` followed by ``chico apply``.
-    Fetches desired state from all configured sources, prints what changed,
-    and writes everything to disk in a single command.
+    Parameters
+    ----------
+    source:
+        Optional source name to scope the sync to. When ``None``, all
+        sources are synced.
     """
-    logger.info("sync.started")
+    logger.info("sync.started", extra={"source_filter": source})
 
     try:
         config = load_config()
-    except ConfigNotFoundError as exc:
+        if source:
+            config = config.filter_by_source(source)
+    except (ConfigNotFoundError, ConfigValidationError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
 

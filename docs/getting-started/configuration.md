@@ -22,9 +22,13 @@ providers:
 
 ## Sources
 
+You can configure multiple sources. Each is processed independently during
+`plan`, `apply`, and `sync`. Pass a source name to any of those commands to
+operate on a single source (e.g. `chico-ai plan agents-patterns`).
+
 | Field | Type | Description |
 |---|---|---|
-| `name` | string | Unique name for this source |
+| `name` | string | Unique name for this source. Used as the argument to filter commands |
 | `type` | string | Source type (`github`) |
 | `repo` | string | GitHub repository in `owner/repo` format |
 | `branch` | string | Branch to sync from |

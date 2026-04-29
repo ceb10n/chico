@@ -85,6 +85,18 @@ class TestSyncNoConfig:
         result = runner.invoke(app, ["sync"])
         assert "Config file not found" in result.output
 
+    def test_exits_with_error_for_unknown_source(
+        self, chico_home, config_file, monkeypatch
+    ):
+        result = runner.invoke(app, ["sync", "nonexistent"])
+        assert result.exit_code == 1
+
+    def test_shows_error_for_unknown_source(
+        self, chico_home, config_file, monkeypatch
+    ):
+        result = runner.invoke(app, ["sync", "nonexistent"])
+        assert "not found" in result.output
+
 
 # ── no changes ────────────────────────────────────────────────────────────────
 

@@ -135,6 +135,33 @@ class TestConfig:
         config = Config(providers=[], sources=[], policy=PolicyConfig())
         assert config.get_source("missing") is None
 
+    def test_filter_by_source_returns_filtered_config(self):
+        s1 = SourceConfig(name="hooks", type="github", repo="org/r1", path="h/")
+        s2 = SourceConfig(name="steering", type="github", repo="org/r2", path="s/")
+        p = ProviderConfig(name="kiro", type="kiro")
+        config = Config(providers=[p], sources=[s1, s2], policy=PolicyConfig())
+        filtered = config.filter_by_source("hooks")
+        assert len(filtered.sources) == 1
+        assert filtered.sources[0].name == "hooks"
+        assert filtered.providers == [p]
+
+    def test_filter_by_source_raises_when_not_found(self):
+        from chico.core.config import ConfigValidationError
+
+        s = SourceConfig(name="hooks", type="github", repo="org/r", path="h/")
+        config = Config(providers=[], sources=[s], policy=PolicyConfig())
+        with pytest.raises(ConfigValidationError, match="missing"):
+            config.filter_by_source("missing")
+
+    def test_filter_by_source_error_lists_available(self):
+        from chico.core.config import ConfigValidationError
+
+        s1 = SourceConfig(name="hooks", type="github", repo="org/r1", path="h/")
+        s2 = SourceConfig(name="steering", type="github", repo="org/r2", path="s/")
+        config = Config(providers=[], sources=[s1, s2], policy=PolicyConfig())
+        with pytest.raises(ConfigValidationError, match="hooks, steering"):
+            config.filter_by_source("nope")
+
 
 # ---------------------------------------------------------------------------
 # load_config

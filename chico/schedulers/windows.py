@@ -35,7 +35,7 @@ class SchedulerError(Exception):
     """Raised when a Task Scheduler operation fails."""
 
 
-def install(interval_minutes: int) -> None:
+def install(interval_minutes: int, command: str | None = None) -> None:
     """Create or update the ChicoSync scheduled task.
 
     Schedules ``python -m chico sync`` to run every ``interval_minutes``
@@ -46,6 +46,8 @@ def install(interval_minutes: int) -> None:
     ----------
     interval_minutes:
         How often to run, in minutes. Must be between 1 and 1439.
+    command:
+        The shell command to schedule. Defaults to ``python -m chico sync``.
 
     Raises
     ------
@@ -57,7 +59,7 @@ def install(interval_minutes: int) -> None:
             f"interval_minutes must be between 1 and 1439, got {interval_minutes}"
         )
 
-    cmd = f'"{sys.executable}" -m chico sync'
+    cmd = command or f'"{sys.executable}" -m chico sync'
     result = _run(
         "/Create",
         "/TN",

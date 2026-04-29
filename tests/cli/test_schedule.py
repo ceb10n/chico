@@ -68,13 +68,19 @@ class TestScheduleInstall:
         sched = _make_scheduler()
         with patch("chico.cli.schedule.get_scheduler", return_value=sched):
             runner.invoke(app, ["schedule", "install"])
-        sched.install.assert_called_once_with(30)
+        sched.install.assert_called_once()
+        args, kwargs = sched.install.call_args
+        assert args[0] == 30
+        assert "command" in kwargs
 
     def test_accepts_custom_interval(self):
         sched = _make_scheduler()
         with patch("chico.cli.schedule.get_scheduler", return_value=sched):
             runner.invoke(app, ["schedule", "install", "--every", "15"])
-        sched.install.assert_called_once_with(15)
+        sched.install.assert_called_once()
+        args, kwargs = sched.install.call_args
+        assert args[0] == 15
+        assert "command" in kwargs
 
     def test_exits_with_error_on_failure(self):
         with patch(
@@ -95,6 +101,21 @@ class TestScheduleInstall:
         ):
             result = runner.invoke(app, ["schedule", "install"])
         assert "Access denied" in result.output
+
+    def test_passes_source_in_command(self):
+        sched = _make_scheduler()
+        with patch("chico.cli.schedule.get_scheduler", return_value=sched):
+            runner.invoke(app, ["schedule", "install", "--source", "hooks"])
+        _, kwargs = sched.install.call_args
+        assert "hooks" in kwargs["command"]
+
+    def test_command_without_source_has_no_source_arg(self):
+        sched = _make_scheduler()
+        with patch("chico.cli.schedule.get_scheduler", return_value=sched):
+            runner.invoke(app, ["schedule", "install"])
+        _, kwargs = sched.install.call_args
+        cmd = kwargs["command"]
+        assert cmd.endswith("-m chico sync")
 
 
 # ── schedule uninstall ────────────────────────────────────────────────────────

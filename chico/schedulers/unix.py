@@ -28,7 +28,7 @@ class SchedulerError(Exception):
     """Raised when a cron operation fails."""
 
 
-def install(interval_minutes: int) -> None:
+def install(interval_minutes: int, command: str | None = None) -> None:
     """Add or update the chico sync cron entry.
 
     Removes any existing chico entry before adding the new one, so this
@@ -38,6 +38,8 @@ def install(interval_minutes: int) -> None:
     ----------
     interval_minutes:
         How often to run, in minutes. Must be between 1 and 59.
+    command:
+        The shell command to schedule. Defaults to ``python -m chico sync``.
 
     Raises
     ------
@@ -50,7 +52,7 @@ def install(interval_minutes: int) -> None:
         )
 
     lines = [line for line in _crontab_lines() if CRON_MARKER not in line]
-    cmd = f"{sys.executable} -m chico sync"
+    cmd = command or f"{sys.executable} -m chico sync"
     lines.append(f"*/{interval_minutes} * * * * {cmd}  {CRON_MARKER}")
     _write_crontab(lines)
 
