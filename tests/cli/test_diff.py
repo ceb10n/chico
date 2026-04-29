@@ -56,6 +56,16 @@ class TestDiffNoConfig:
         result = runner.invoke(app, ["diff"])
         assert "Config file not found" in result.output
 
+    def test_exits_with_error_for_unknown_source(
+        self, chico_home, config_file, monkeypatch
+    ):
+        result = runner.invoke(app, ["diff", "nonexistent"])
+        assert result.exit_code == 1
+
+    def test_shows_error_for_unknown_source(self, chico_home, config_file, monkeypatch):
+        result = runner.invoke(app, ["diff", "nonexistent"])
+        assert "not found" in result.output
+
 
 # ── no changes ────────────────────────────────────────────────────────────────
 

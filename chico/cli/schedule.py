@@ -22,26 +22,42 @@ schedule_app = typer.Typer(
 )
 
 
+def _build_sync_command(source: str | None = None) -> str:
+    """Build the shell command for the scheduled sync task."""
+    base = f"{sys.executable} -m chico sync"
+    if source:
+        return f"{base} {source}"
+    return base
+
+
 @schedule_app.command("install")
 def install_cmd(
     every: int = typer.Option(30, "--every", help="How often to sync, in minutes."),
+    source: str | None = typer.Option(
+        None, "--source", help="Source name to sync. Omit to sync all sources."
+    ),
 ) -> None:
     """Run chico-ai sync automatically on a schedule.
 
     Uses cron on macOS and Linux, and Windows Task Scheduler on Windows.
     Default interval is every 30 minutes. Pass --every to change it.
+    Pass --source to schedule only a specific source.
     """
     sched = get_scheduler()
+    cmd = _build_sync_command(source)
     try:
-        sched.install(every)
+        sched.install(every, command=cmd)
     except sched.SchedulerError as exc:
         typer.echo(f"Error: {exc}", err=True)
         logger.error("schedule.install.failed", extra={"error": str(exc)})
         raise typer.Exit(1) from exc
 
     typer.echo(f"Scheduled chico sync every {every} minute(s).")
-    typer.echo(f"  Command: {sys.executable} -m chico sync")
-    logger.info("schedule.install.completed", extra={"interval_minutes": every})
+    typer.echo(f"  Command: {cmd}")
+    logger.info(
+        "schedule.install.completed",
+        extra={"interval_minutes": every, "source": source},
+    )
 
 
 @schedule_app.command("uninstall")

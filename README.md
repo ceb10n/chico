@@ -105,6 +105,7 @@ Preview what would change without writing anything to disk:
 
 ```bash
 chico-ai plan
+chico-ai plan hooks          # plan a single source
 ```
 
 ### Apply
@@ -113,6 +114,7 @@ Apply the changes computed by plan:
 
 ```bash
 chico-ai apply
+chico-ai apply steering-files  # apply a single source
 ```
 
 ### Sync
@@ -121,6 +123,7 @@ Plan and apply in one step:
 
 ```bash
 chico-ai sync
+chico-ai sync my-config       # sync a single source
 ```
 
 ### Schedule
@@ -130,6 +133,7 @@ Install a recurring sync (every 30 minutes by default):
 ```bash
 chico-ai schedule install
 chico-ai schedule install --every 15
+chico-ai schedule install --every 30 --source hooks   # schedule a single source
 chico-ai schedule status
 chico-ai schedule uninstall
 ```

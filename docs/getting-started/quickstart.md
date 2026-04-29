@@ -24,6 +24,12 @@ chico-ai plan
 
 Preview what files will be synced without writing anything to disk.
 
+You can also scope to a single source:
+
+```bash
+chico-ai plan agents-patterns
+```
+
 ## 3. Apply
 
 ```bash
@@ -38,8 +44,11 @@ Download and apply the changes.
 chico-ai sync
 ```
 
+All three commands accept an optional source name to operate on a single source.
+
 ## 5. Schedule automatic syncs
 
 ```bash
 chico-ai schedule install --every 30
+chico-ai schedule install --every 15 --source agents-patterns
 ```

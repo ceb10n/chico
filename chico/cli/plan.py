@@ -10,7 +10,7 @@ import logging
 
 import typer
 
-from chico.core.config import ConfigNotFoundError, load_config
+from chico.core.config import ConfigNotFoundError, ConfigValidationError, load_config
 from chico.core.plan import compute_plan
 from chico.core.resource import ChangeType
 
@@ -23,18 +23,26 @@ _CHANGE_SYMBOL: dict[str, str] = {
 }
 
 
-def plan() -> None:
+def plan(source: str | None = None) -> None:
     """Compute the changeset between desired and current state.
 
-    Fetches desired state from every configured source, diffs it against
-    the current local state, and prints a summary of what would change.
-    Nothing is written to disk — use ``chico apply`` to apply the changes.
+    Fetches desired state from every configured source (or a single source
+    when ``source`` is given), diffs it against the current local state,
+    and prints a summary of what would change. Nothing is written to disk.
+
+    Parameters
+    ----------
+    source:
+        Optional source name to scope the plan to. When ``None``, all
+        sources are planned.
     """
-    logger.info("plan.started")
+    logger.info("plan.started", extra={"source_filter": source})
 
     try:
         config = load_config()
-    except ConfigNotFoundError as exc:
+        if source:
+            config = config.filter_by_source(source)
+    except (ConfigNotFoundError, ConfigValidationError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
 

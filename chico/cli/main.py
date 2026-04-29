@@ -89,35 +89,51 @@ def init(
 
 
 @app.command()
-def plan() -> None:
+def plan(
+    source: Annotated[
+        str | None,
+        typer.Argument(
+            help="Source name to plan. Omit to plan all sources.",
+        ),
+    ] = None,
+) -> None:
     """Preview which files would be added or updated — without touching anything.
 
-    Fetches the latest files from your configured GitHub repository and
-    compares them with what is already in ~/.kiro/. Prints a summary of
-    additions and updates. Nothing is written to disk.
+    Optionally pass a source name to scope the plan to a single source.
     """
-    _plan()
+    _plan(source=source)
 
 
 @app.command()
-def apply() -> None:
+def apply(
+    source: Annotated[
+        str | None,
+        typer.Argument(
+            help="Source name to apply. Omit to apply all sources.",
+        ),
+    ] = None,
+) -> None:
     """Download files from GitHub and write them to ~/.kiro/.
 
-    Fetches the latest files from your configured GitHub repository and
-    writes every addition or update to the local Kiro directory. Records
-    the result in ~/.chico/state.json.
+    Optionally pass a source name to scope the apply to a single source.
     """
-    _apply()
+    _apply(source=source)
 
 
 @app.command()
-def diff() -> None:
+def diff(
+    source: Annotated[
+        str | None,
+        typer.Argument(
+            help="Source name to diff. Omit to diff all sources.",
+        ),
+    ] = None,
+) -> None:
     """Show the exact content differences for each file that would change.
 
-    Like plan, but more detailed — shows the before and after content of
-    every file that would be added or updated. Nothing is written to disk.
+    Optionally pass a source name to scope the diff to a single source.
     """
-    _diff()
+    _diff(source=source)
 
 
 @app.command()
@@ -131,13 +147,19 @@ def status() -> None:
 
 
 @app.command()
-def sync() -> None:
+def sync(
+    source: Annotated[
+        str | None,
+        typer.Argument(
+            help="Source name to sync. Omit to sync all sources.",
+        ),
+    ] = None,
+) -> None:
     """Sync now — fetch from GitHub and update ~/.kiro/ in one step.
 
-    Equivalent to running ``chico-ai plan`` followed by ``chico-ai apply``.
-    Use this for one-shot syncs or when you don't need to review changes first.
+    Optionally pass a source name to scope the sync to a single source.
     """
-    _sync()
+    _sync(source=source)
 
 
 app.add_typer(schedule_app)

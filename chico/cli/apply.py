@@ -11,7 +11,7 @@ import logging
 import typer
 
 from chico.core.apply import execute_apply
-from chico.core.config import ConfigNotFoundError, load_config
+from chico.core.config import ConfigNotFoundError, ConfigValidationError, load_config
 from chico.core.resource import ChangeType, ResultStatus
 
 logger = logging.getLogger("chico")
@@ -29,18 +29,22 @@ _STATUS_LABEL: dict[str, str] = {
 }
 
 
-def apply() -> None:
+def apply(source: str | None = None) -> None:
     """Apply the changeset between desired and current state.
 
-    Fetches desired state from all configured sources, diffs against the
-    current local state, and writes all changes to disk. Persists the
-    outcome to ``~/.chico/state.json``.
+    Parameters
+    ----------
+    source:
+        Optional source name to scope the apply to. When ``None``, all
+        sources are applied.
     """
-    logger.info("apply.started")
+    logger.info("apply.started", extra={"source_filter": source})
 
     try:
         config = load_config()
-    except ConfigNotFoundError as exc:
+        if source:
+            config = config.filter_by_source(source)
+    except (ConfigNotFoundError, ConfigValidationError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
 
