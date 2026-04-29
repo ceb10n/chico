@@ -6,6 +6,7 @@
 
 <br/>
 
+
 [![CI](https://github.com/ceb10n/chico/actions/workflows/publish.yml/badge.svg)](https://github.com/ceb10n/chico/actions)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/chico-ai)](https://pypi.org/project/chico-ai)
 [![PyPI - License](https://img.shields.io/pypi/l/chico-ai)](https://pypi.org/project/chico-ai)
