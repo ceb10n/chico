@@ -50,6 +50,7 @@ nav:
       - chico apply: cli/apply.md
       - chico sync: cli/sync.md
       - chico diff: cli/diff.md
+      - chico list: cli/list.md
       - chico status: cli/status.md
       - chico schedule: cli/schedule.md
   - API Reference:

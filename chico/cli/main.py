@@ -13,6 +13,7 @@ import typer
 from chico.cli.apply import apply as _apply
 from chico.cli.diff import diff as _diff
 from chico.cli.init import init as _init
+from chico.cli.list import list_config as _list
 from chico.cli.plan import plan as _plan
 from chico.cli.schedule import schedule_app
 from chico.cli.status import status as _status
@@ -144,6 +145,12 @@ def status() -> None:
     GitHub commit was last synced, and how many files are tracked.
     """
     _status()
+
+
+@app.command(name="list")
+def list_cmd() -> None:
+    """Show all configured sources and providers."""
+    _list()
 
 
 @app.command()
