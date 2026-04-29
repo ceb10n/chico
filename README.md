@@ -138,6 +138,14 @@ chico-ai schedule status
 chico-ai schedule uninstall
 ```
 
+### List
+
+Show all configured sources and providers:
+
+```bash
+chico-ai list
+```
+
 ### Environment variables
 
 | Variable | Description |
