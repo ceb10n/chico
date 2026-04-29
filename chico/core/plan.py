@@ -177,17 +177,19 @@ def _compute_risk_level(changes: list[Diff]) -> RiskLevel:
 
 
 def _resolve_kiro_dir(provider_cfg: ProviderConfig) -> Path:
-    """Return the kiro directory path for the given provider.
+    """Return the target directory for the given provider.
 
     For ``"global"`` level, always returns ``~/.kiro``.
-    For ``"project"`` level, returns ``{path}/.kiro`` when the provider
-    has an explicit ``path`` configured, otherwise falls back to
+    For ``"project"`` level with an explicit ``path``, returns that path
+    directly — no ``.kiro/`` is appended, giving the user full control
+    over the target directory.
+    For ``"project"`` level without a ``path``, falls back to
     ``{cwd}/.kiro``.
     """
     if provider_cfg.level == "global":
         return Path.home() / ".kiro"
     if provider_cfg.path:
-        return Path(provider_cfg.path) / ".kiro"
+        return Path(provider_cfg.path)
     return Path.cwd() / ".kiro"
 
 

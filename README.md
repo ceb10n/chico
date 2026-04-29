@@ -178,8 +178,8 @@ providers:
 | :---- | :---------- |
 | `name` | Unique provider name |
 | `type` | Provider type (`kiro`) |
-| `level` | `global` for `~/.kiro/`, `project` for a specific project directory |
-| `path` | Absolute path to the project directory (project level only). Recorded automatically by `chico-ai init --level project`. Ensures scheduled syncs write to the correct location |
+| `level` | `global` for `~/.kiro/`, `project` for a specific target directory |
+| `path` | Absolute path to the target directory (project level only). Files are synced directly into this path — no `.kiro/` is appended. Recorded automatically by `chico-ai init --level project` as `{cwd}/.kiro` |
 
 ## 👩🏼‍⚖️ License
 
