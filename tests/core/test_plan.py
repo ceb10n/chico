@@ -140,10 +140,24 @@ class TestBuildProvider:
 
 class TestResolveKiroDir:
     def test_global_returns_home_kiro(self):
-        assert _resolve_kiro_dir("global") == Path.home() / ".kiro"
+        cfg = ProviderConfig(name="kiro", type="kiro", level="global")
+        assert _resolve_kiro_dir(cfg) == Path.home() / ".kiro"
 
-    def test_project_returns_cwd_kiro(self):
-        assert _resolve_kiro_dir("project") == Path.cwd() / ".kiro"
+    def test_project_without_path_returns_cwd_kiro(self):
+        cfg = ProviderConfig(name="kiro", type="kiro", level="project")
+        assert _resolve_kiro_dir(cfg) == Path.cwd() / ".kiro"
+
+    def test_project_with_path_returns_configured_path(self, tmp_path):
+        cfg = ProviderConfig(
+            name="kiro", type="kiro", level="project", path=str(tmp_path)
+        )
+        assert _resolve_kiro_dir(cfg) == tmp_path / ".kiro"
+
+    def test_global_ignores_path(self, tmp_path):
+        cfg = ProviderConfig(
+            name="kiro", type="kiro", level="global", path=str(tmp_path)
+        )
+        assert _resolve_kiro_dir(cfg) == Path.home() / ".kiro"
 
 
 # ── compute_plan ──────────────────────────────────────────────────────────────

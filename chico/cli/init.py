@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+from pathlib import Path
 from typing import cast
 
 import typer
@@ -81,8 +82,11 @@ def init(
     if source is not None:
         repo = cast(str, repo)
         source_name = repo.split("/")[-1]
+        provider_entry: dict = {"name": target, "type": "kiro", "level": level}
+        if level == "project":
+            provider_entry["path"] = str(Path.cwd())
         config: dict = {
-            "providers": [{"name": target, "type": "kiro", "level": level}],
+            "providers": [provider_entry],
             "sources": [
                 {
                     "name": source_name,

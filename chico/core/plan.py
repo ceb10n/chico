@@ -130,7 +130,7 @@ def compute_plan(config: Config) -> Plan:
             )
             continue
 
-        kiro_dir = _resolve_kiro_dir(provider_cfg.level)
+        kiro_dir = _resolve_kiro_dir(provider_cfg)
         logger.info(
             "plan.provider.found",
             extra={"provider": provider_cfg.name, "kiro_dir": str(kiro_dir)},
@@ -176,10 +176,18 @@ def _compute_risk_level(changes: list[Diff]) -> RiskLevel:
     return RiskLevel.LOW
 
 
-def _resolve_kiro_dir(level: str) -> Path:
-    """Return the kiro directory path for the given provider level."""
-    if level == "global":
+def _resolve_kiro_dir(provider_cfg: ProviderConfig) -> Path:
+    """Return the kiro directory path for the given provider.
+
+    For ``"global"`` level, always returns ``~/.kiro``.
+    For ``"project"`` level, returns ``{path}/.kiro`` when the provider
+    has an explicit ``path`` configured, otherwise falls back to
+    ``{cwd}/.kiro``.
+    """
+    if provider_cfg.level == "global":
         return Path.home() / ".kiro"
+    if provider_cfg.path:
+        return Path(provider_cfg.path) / ".kiro"
     return Path.cwd() / ".kiro"
 
 

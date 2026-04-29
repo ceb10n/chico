@@ -210,6 +210,44 @@ class TestInitWithSource:
         config = yaml.safe_load((chico_home / "config.yaml").read_text())
         assert config["providers"][0]["level"] == "project"
 
+    def test_project_level_records_cwd_as_path(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(
+            app,
+            [
+                "init",
+                "--source",
+                "github",
+                "--repo",
+                "org/repo",
+                "--path",
+                "p/",
+                "--level",
+                "project",
+            ],
+        )
+        config = yaml.safe_load((chico_home / "config.yaml").read_text())
+        assert config["providers"][0]["path"] == str(Path.cwd())
+
+    def test_global_level_does_not_record_path(self, chico_home: Path):
+        chico_home.rmdir()
+        runner.invoke(
+            app,
+            [
+                "init",
+                "--source",
+                "github",
+                "--repo",
+                "org/repo",
+                "--path",
+                "p/",
+                "--level",
+                "global",
+            ],
+        )
+        config = yaml.safe_load((chico_home / "config.yaml").read_text())
+        assert "path" not in config["providers"][0]
+
     def test_respects_custom_target(self, chico_home: Path):
         chico_home.rmdir()
         runner.invoke(

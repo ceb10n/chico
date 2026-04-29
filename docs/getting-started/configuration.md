@@ -42,4 +42,5 @@ operate on a single source (e.g. `chico-ai plan agents-patterns`).
 |---|---|---|
 | `name` | string | Unique name for this provider |
 | `type` | string | Provider type (`kiro`) |
-| `level` | string | `global` for `~/.kiro/`, `project` for `.kiro/` |
+| `level` | string | `global` for `~/.kiro/`, `project` for `.kiro/` in a specific directory |
+| `path` | string | Absolute path to the project directory. Only used when `level` is `project`. When set, chico syncs into `{path}/.kiro/` regardless of the current working directory. Recorded automatically by `chico-ai init --level project` |

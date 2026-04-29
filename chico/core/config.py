@@ -108,13 +108,20 @@ class ProviderConfig:
         Provider type. Currently only ``"kiro"`` is supported.
     level:
         Kiro directory scope. ``"global"`` targets ``~/.kiro/``;
-        ``"project"`` targets ``.kiro/`` in the current directory.
+        ``"project"`` targets ``.kiro/`` in a specific project directory.
         Defaults to ``"global"``.
+    path:
+        Absolute path to the project directory. Only used when ``level``
+        is ``"project"``. When set, chico syncs into ``{path}/.kiro/``
+        regardless of the current working directory. When omitted and
+        ``level`` is ``"project"``, falls back to the current working
+        directory.
     """
 
     name: str
     type: str
     level: str = "global"
+    path: str = ""
 
 
 @dataclass
@@ -227,6 +234,7 @@ def _parse_provider(raw: dict) -> ProviderConfig:
         name=raw["name"],
         type=raw["type"],
         level=raw.get("level", "global"),
+        path=raw.get("path", ""),
     )
 
 

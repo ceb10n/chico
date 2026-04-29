@@ -123,7 +123,7 @@ def execute_apply(config: Config) -> ApplyResult:
             )
             continue
 
-        kiro_dir = _resolve_kiro_dir(provider_cfg.level)
+        kiro_dir = _resolve_kiro_dir(provider_cfg)
         logger.info(
             "apply.provider.found",
             extra={"provider": provider_cfg.name, "kiro_dir": str(kiro_dir)},
