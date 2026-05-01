@@ -9,7 +9,9 @@ from __future__ import annotations
 import logging
 
 import typer
+from rich.markup import escape
 
+from chico.cli.output import get_console, get_err_console
 from chico.core.config import ConfigNotFoundError, ConfigValidationError, load_config
 from chico.core.plan import compute_plan
 from chico.core.resource import ChangeType
@@ -17,9 +19,9 @@ from chico.core.resource import ChangeType
 logger = logging.getLogger("chico")
 
 _CHANGE_SYMBOL: dict[str, str] = {
-    ChangeType.ADD: "+",
-    ChangeType.MODIFY: "~",
-    ChangeType.REMOVE: "-",
+    ChangeType.ADD: "[green]+[/green]",
+    ChangeType.MODIFY: "[yellow]~[/yellow]",
+    ChangeType.REMOVE: "[red]-[/red]",
 }
 
 
@@ -43,14 +45,14 @@ def plan(source: str | None = None) -> None:
         if source:
             config = config.filter_by_source(source)
     except (ConfigNotFoundError, ConfigValidationError) as exc:
-        typer.echo(str(exc), err=True)
+        get_err_console().print(f"[bold red]Error:[/bold red] {escape(str(exc))}")
         raise typer.Exit(1) from exc
 
     try:
         result = compute_plan(config)
     except Exception as exc:
         logger.error("plan.failed", extra={"error": str(exc)})
-        typer.echo(f"Error: {exc}", err=True)
+        get_err_console().print(f"[bold red]Error:[/bold red] {escape(str(exc))}")
         raise typer.Exit(1) from exc
 
     logger.info(
@@ -58,13 +60,18 @@ def plan(source: str | None = None) -> None:
         extra={"plan_id": result.plan_id, "changes": len(result.changes)},
     )
 
+    console = get_console()
+
     if not result.has_changes:
-        typer.echo("No changes. Your configuration is up to date.")
+        console.print("[dim]No changes. Your configuration is up to date.[/dim]")
         return
 
-    typer.echo(f"Plan: {len(result.changes)} change(s)  (risk: {result.risk_level})\n")
+    console.print(
+        f"[bold]Plan:[/bold] {len(result.changes)} change(s)"
+        f"  ([dim]risk: {escape(str(result.risk_level))}[/dim])\n"
+    )
     for diff in result.changes:
         symbol = _CHANGE_SYMBOL.get(diff.change_type, "?")
-        typer.echo(f"  {symbol} {diff.resource_id}")
+        console.print(f"  {symbol} {escape(diff.resource_id)}")
 
-    typer.echo(f"\nPlan ID: {result.plan_id}")
+    console.print(f"\n[dim]Plan ID:[/dim] {escape(result.plan_id)}")

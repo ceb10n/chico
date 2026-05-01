@@ -33,6 +33,7 @@ dependencies = [
     "typer>=0.12",
     "pyyaml>=6.0",
     "PyGithub>=2.0",
+    "rich>=13.0",
 ]
 
 [project.urls]

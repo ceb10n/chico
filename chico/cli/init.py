@@ -14,7 +14,9 @@ from typing import cast
 
 import typer
 import yaml
+from rich.markup import escape
 
+from chico.cli.output import get_console, get_err_console
 from chico.core.paths import CHICO_DIR, CONFIG_FILE, STATE_FILE
 
 logger = logging.getLogger("chico")
@@ -58,23 +60,29 @@ def init(
     """
     logger.info("init.started")
 
+    console = get_console()
+
     if CONFIG_FILE.exists():
         logger.info("init.already_initialized", extra={"chico_dir": str(CHICO_DIR)})
-        typer.echo(f"Already initialized at {CHICO_DIR}")
+        console.print(f"[dim]Already initialized at {escape(str(CHICO_DIR))}[/dim]")
         raise typer.Exit()
 
     if source is not None:
         if source != "github":
-            typer.echo(
-                f"Error: unsupported source type '{source}'. Supported: github",
-                err=True,
+            get_err_console().print(
+                f"[bold red]Error:[/bold red] unsupported source type"
+                f" {escape(repr(source))}. Supported: github"
             )
             raise typer.Exit(1)
         if repo is None:
-            typer.echo("Error: --repo is required when --source is specified", err=True)
+            get_err_console().print(
+                "[bold red]Error:[/bold red] --repo is required when --source is specified"
+            )
             raise typer.Exit(1)
         if not path:
-            typer.echo("Error: --path is required when --source is specified", err=True)
+            get_err_console().print(
+                "[bold red]Error:[/bold red] --path is required when --source is specified"
+            )
             raise typer.Exit(1)
 
     CHICO_DIR.mkdir(parents=True, exist_ok=True)
@@ -117,17 +125,23 @@ def init(
         },
     )
 
-    typer.echo(f"Initialized chico at {CHICO_DIR}")
-    typer.echo(f"  config  {CONFIG_FILE}")
-    typer.echo(f"  state   {STATE_FILE}")
+    console.print(
+        f"[green]✓[/green]  Initialized chico at [bold]{escape(str(CHICO_DIR))}[/bold]"
+    )
+    console.print(f"   [dim]config[/dim]  {escape(str(CONFIG_FILE))}")
+    console.print(f"   [dim]state[/dim]   {escape(str(STATE_FILE))}")
     if source is not None:
-        typer.echo(f"  source  {repo} ({source})")
-    typer.echo("")
-    typer.echo("Next steps:")
+        console.print(
+            f"   [dim]source[/dim]  {escape(cast(str, repo))} ({escape(source)})"
+        )
+    console.print("")
+    console.print("[bold]Next steps:[/bold]")
     if source is None:
-        typer.echo(f"  1. Edit {CONFIG_FILE} to add providers and sources")
-        typer.echo("  2. Run `chico plan` to preview changes")
-        typer.echo("  3. Run `chico apply` to apply them")
+        console.print(
+            f"   [dim]1.[/dim] Edit {escape(str(CONFIG_FILE))} to add providers and sources"
+        )
+        console.print("   [dim]2.[/dim] Run `chico plan` to preview changes")
+        console.print("   [dim]3.[/dim] Run `chico apply` to apply them")
     else:
-        typer.echo("  1. Run `chico plan` to preview changes")
-        typer.echo("  2. Run `chico apply` to apply them")
+        console.print("   [dim]1.[/dim] Run `chico plan` to preview changes")
+        console.print("   [dim]2.[/dim] Run `chico apply` to apply them")

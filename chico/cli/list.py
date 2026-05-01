@@ -9,7 +9,9 @@ from __future__ import annotations
 import logging
 
 import typer
+from rich.markup import escape
 
+from chico.cli.output import get_console, get_err_console
 from chico.core.config import ConfigNotFoundError, load_config
 
 logger = logging.getLogger("chico")
@@ -26,33 +28,37 @@ def list_config() -> None:
     try:
         config = load_config()
     except ConfigNotFoundError as exc:
-        typer.echo(str(exc), err=True)
+        get_err_console().print(f"[bold red]Error:[/bold red] {escape(str(exc))}")
         raise typer.Exit(1) from exc
 
+    console = get_console()
+
     if not config.providers and not config.sources:
-        typer.echo("No providers or sources configured.")
-        typer.echo("Edit ~/.chico/config.yaml or run `chico-ai init` to get started.")
+        console.print("[dim]No providers or sources configured.[/dim]")
+        console.print(
+            "[dim]Edit ~/.chico/config.yaml or run `chico-ai init` to get started.[/dim]"
+        )
         return
 
     if config.providers:
-        typer.echo(f"Providers ({len(config.providers)}):\n")
+        console.print(f"[bold]Providers ({len(config.providers)}):[/bold]\n")
         for p in config.providers:
-            typer.echo(f"  {p.name}")
-            typer.echo(f"    type:  {p.type}")
-            typer.echo(f"    level: {p.level}")
+            console.print(f"  [bold]{escape(p.name)}[/bold]")
+            console.print(f"    [dim]type:[/dim]  {escape(p.type)}")
+            console.print(f"    [dim]level:[/dim] {escape(p.level)}")
             if p.path:
-                typer.echo(f"    path:  {p.path}")
-            typer.echo("")
+                console.print(f"    [dim]path:[/dim]  {escape(p.path)}")
+            console.print("")
 
     if config.sources:
-        typer.echo(f"Sources ({len(config.sources)}):\n")
+        console.print(f"[bold]Sources ({len(config.sources)}):[/bold]\n")
         for s in config.sources:
-            typer.echo(f"  {s.name}")
-            typer.echo(f"    type:   {s.type}")
-            typer.echo(f"    repo:   {s.repo}")
-            typer.echo(f"    path:   {s.path}")
-            typer.echo(f"    branch: {s.branch}")
-            typer.echo(f"    target: {s.target or '(none)'}")
+            console.print(f"  [bold]{escape(s.name)}[/bold]")
+            console.print(f"    [dim]type:[/dim]   {escape(s.type)}")
+            console.print(f"    [dim]repo:[/dim]   {escape(s.repo)}")
+            console.print(f"    [dim]path:[/dim]   {escape(s.path)}")
+            console.print(f"    [dim]branch:[/dim] {escape(s.branch)}")
+            console.print(f"    [dim]target:[/dim] {escape(s.target) or '(none)'}")
             if s.source_prefix:
-                typer.echo(f"    prefix: {s.source_prefix}")
-            typer.echo("")
+                console.print(f"    [dim]prefix:[/dim] {escape(s.source_prefix)}")
+            console.print("")

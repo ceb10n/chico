@@ -218,6 +218,7 @@ source = { editable = "." }
 dependencies = [
     { name = "pygithub" },
     { name = "pyyaml" },
+    { name = "rich" },
     { name = "typer" },
 ]
 
@@ -243,6 +244,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "rich", specifier = ">=13.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9" },
     { name = "ty", marker = "extra == 'dev'", specifier = ">=0.0.1a1" },
     { name = "typer", specifier = ">=0.12" },

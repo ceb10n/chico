@@ -10,7 +10,9 @@ import logging
 import sys
 
 import typer
+from rich.markup import escape
 
+from chico.cli.output import get_console, get_err_console
 from chico.schedulers import get_scheduler
 
 logger = logging.getLogger("chico")
@@ -48,12 +50,15 @@ def install_cmd(
     try:
         sched.install(every, command=cmd)
     except sched.SchedulerError as exc:
-        typer.echo(f"Error: {exc}", err=True)
+        get_err_console().print(f"[bold red]Error:[/bold red] {escape(str(exc))}")
         logger.error("schedule.install.failed", extra={"error": str(exc)})
         raise typer.Exit(1) from exc
 
-    typer.echo(f"Scheduled chico sync every {every} minute(s).")
-    typer.echo(f"  Command: {cmd}")
+    console = get_console()
+    console.print(
+        f"[green]✓[/green]  Scheduled chico sync every [bold]{every}[/bold] minute(s)."
+    )
+    console.print(f"   [dim]Command:[/dim] {escape(cmd)}")
     logger.info(
         "schedule.install.completed",
         extra={"interval_minutes": every, "source": source},
@@ -67,11 +72,11 @@ def uninstall_cmd() -> None:
     try:
         sched.uninstall()
     except sched.SchedulerError as exc:
-        typer.echo(f"Error: {exc}", err=True)
+        get_err_console().print(f"[bold red]Error:[/bold red] {escape(str(exc))}")
         logger.error("schedule.uninstall.failed", extra={"error": str(exc)})
         raise typer.Exit(1) from exc
 
-    typer.echo("Scheduled task removed.")
+    get_console().print("[green]✓[/green]  Scheduled task removed.")
     logger.info("schedule.uninstall.completed")
 
 
@@ -79,15 +84,16 @@ def uninstall_cmd() -> None:
 def status_cmd() -> None:
     """Show whether automatic syncing is active and its current interval."""
     sched = get_scheduler()
+    console = get_console()
     if not sched.is_installed():
-        typer.echo(
-            "No scheduled task found. Run `chico schedule install` to set one up."
+        console.print(
+            "[dim]No scheduled task found. Run `chico schedule install` to set one up.[/dim]"
         )
         return
 
     info = sched.query()
-    typer.echo("ChicoSync is installed.\n")
+    console.print("[bold]ChicoSync is installed.[/bold]\n")
 
     if info:
         for key, value in info.items():
-            typer.echo(f"  {key}: {value}")
+            console.print(f"  [dim]{escape(key)}:[/dim] {escape(str(value))}")

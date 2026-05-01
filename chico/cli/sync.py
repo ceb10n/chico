@@ -9,7 +9,9 @@ from __future__ import annotations
 import logging
 
 import typer
+from rich.markup import escape
 
+from chico.cli.output import get_console, get_err_console
 from chico.core.apply import execute_apply
 from chico.core.config import ConfigNotFoundError, ConfigValidationError, load_config
 from chico.core.resource import ChangeType, ResultStatus
@@ -17,15 +19,15 @@ from chico.core.resource import ChangeType, ResultStatus
 logger = logging.getLogger("chico")
 
 _CHANGE_SYMBOL: dict[str, str] = {
-    ChangeType.ADD: "+",
-    ChangeType.MODIFY: "~",
-    ChangeType.REMOVE: "-",
+    ChangeType.ADD: "[green]+[/green]",
+    ChangeType.MODIFY: "[yellow]~[/yellow]",
+    ChangeType.REMOVE: "[red]-[/red]",
 }
 
 _STATUS_LABEL: dict[str, str] = {
-    ResultStatus.OK: "ok",
-    ResultStatus.ERROR: "error",
-    ResultStatus.SKIPPED: "skipped",
+    ResultStatus.OK: "[green]ok[/green]",
+    ResultStatus.ERROR: "[red]error[/red]",
+    ResultStatus.SKIPPED: "[dim]skipped[/dim]",
 }
 
 
@@ -45,42 +47,47 @@ def sync(source: str | None = None) -> None:
         if source:
             config = config.filter_by_source(source)
     except (ConfigNotFoundError, ConfigValidationError) as exc:
-        typer.echo(str(exc), err=True)
+        get_err_console().print(f"[bold red]Error:[/bold red] {escape(str(exc))}")
         raise typer.Exit(1) from exc
 
     try:
         result = execute_apply(config)
     except Exception as exc:
         logger.error("sync.failed", extra={"error": str(exc)})
-        typer.echo(f"Error: {exc}", err=True)
+        get_err_console().print(f"[bold red]Error:[/bold red] {escape(str(exc))}")
         raise typer.Exit(1) from exc
 
+    console = get_console()
+
     if not result.plan.has_changes:
-        typer.echo("Nothing to sync. Your configuration is up to date.")
+        console.print("[dim]Nothing to sync. Your configuration is up to date.[/dim]")
         logger.info("sync.completed", extra={"applied": 0, "errors": 0})
         return
 
-    typer.echo(f"Syncing {len(result.plan.changes)} change(s)...\n")
+    console.print(f"Syncing [bold]{len(result.plan.changes)}[/bold] change(s)...\n")
 
     change_by_id = {d.resource_id: d for d in result.plan.changes}
     for res in result.results:
         diff = change_by_id.get(res.resource_id)
         symbol = _CHANGE_SYMBOL.get(diff.change_type, "?") if diff else "?"
-        label = _STATUS_LABEL.get(str(res.status), str(res.status))
-        line = f"  {symbol} {res.resource_id}    {label}"
+        label = _STATUS_LABEL.get(str(res.status), escape(str(res.status)))
+        line = f"  {symbol} {escape(res.resource_id)}    {label}"
         if res.status == ResultStatus.ERROR and res.message:
-            line += f": {res.message}"
-        typer.echo(line)
+            line += f": {escape(res.message)}"
+        console.print(line)
 
-    typer.echo("")
+    console.print("")
 
     if result.has_errors:
-        typer.echo(f"Synced {result.ok_count}, {result.error_count} error(s).")
+        console.print(
+            f"Synced [bold]{result.ok_count}[/bold],"
+            f" [bold red]{result.error_count}[/bold red] error(s)."
+        )
         logger.info(
             "sync.completed",
             extra={"applied": result.ok_count, "errors": result.error_count},
         )
         raise typer.Exit(1)
 
-    typer.echo(f"Synced {result.ok_count} change(s). No errors.")
+    console.print(f"[green]Synced {result.ok_count} change(s). No errors.[/green]")
     logger.info("sync.completed", extra={"applied": result.ok_count, "errors": 0})
