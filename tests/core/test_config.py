@@ -290,6 +290,48 @@ class TestLoadConfig:
         with pytest.raises(ConfigValidationError):
             load_config()
 
+    def test_raises_when_provider_path_is_relative(self, config_file: Path):
+        from chico.core.config import ConfigValidationError
+
+        _write_config(
+            config_file.parent,
+            {
+                "providers": [
+                    {
+                        "name": "kiro",
+                        "type": "kiro",
+                        "level": "project",
+                        "path": "relative/path",
+                    }
+                ],
+                "sources": [],
+                "policy": {"strategy": "safe"},
+            },
+        )
+        with pytest.raises(ConfigValidationError, match="absolute"):
+            load_config()
+
+    def test_provider_path_error_includes_name_and_value(self, config_file: Path):
+        from chico.core.config import ConfigValidationError
+
+        _write_config(
+            config_file.parent,
+            {
+                "providers": [
+                    {
+                        "name": "my-provider",
+                        "type": "kiro",
+                        "level": "project",
+                        "path": "not/absolute",
+                    }
+                ],
+                "sources": [],
+                "policy": {"strategy": "safe"},
+            },
+        )
+        with pytest.raises(ConfigValidationError, match="my-provider"):
+            load_config()
+
     def test_multiple_sources(self, config_file: Path):
         _write_config(
             config_file.parent,
