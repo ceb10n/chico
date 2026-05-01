@@ -47,7 +47,7 @@ def list_config() -> None:
             console.print(f"    [dim]type:[/dim]  {escape(p.type)}")
             console.print(f"    [dim]level:[/dim] {escape(p.level)}")
             if p.path:
-                console.print(f"    [dim]path:[/dim]  {escape(p.path)}")
+                console.print(f"    [dim]path:[/dim]  {escape(p.path)}", soft_wrap=True)
             console.print("")
 
     if config.sources:
