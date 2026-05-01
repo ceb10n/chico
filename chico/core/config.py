@@ -41,6 +41,7 @@ Usage
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import yaml
 
@@ -232,11 +233,16 @@ def _parse_source(raw: dict) -> SourceConfig:
 
 
 def _parse_provider(raw: dict) -> ProviderConfig:
+    path = raw.get("path", "")
+    if path and not Path(path).is_absolute():
+        raise ConfigValidationError(
+            f"Provider {raw['name']!r} path must be absolute: {path!r}"
+        )
     return ProviderConfig(
         name=raw["name"],
         type=raw["type"],
         level=raw.get("level", "global"),
-        path=raw.get("path", ""),
+        path=path,
     )
 
 

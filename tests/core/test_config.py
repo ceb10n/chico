@@ -220,6 +220,7 @@ class TestLoadConfig:
         assert config.providers[0].path == ""
 
     def test_loads_provider_with_path(self, config_file: Path):
+        provider_path = str(config_file.parent / "my-project")
         _write_config(
             config_file.parent,
             {
@@ -228,7 +229,7 @@ class TestLoadConfig:
                         "name": "kiro",
                         "type": "kiro",
                         "level": "project",
-                        "path": "/home/user/my-project",
+                        "path": provider_path,
                     }
                 ],
                 "sources": [],
@@ -237,7 +238,7 @@ class TestLoadConfig:
         )
         config = load_config()
         assert config.providers[0].level == "project"
-        assert config.providers[0].path == "/home/user/my-project"
+        assert config.providers[0].path == provider_path
 
     def test_loads_source_defaults(self, config_file: Path):
         _write_config(
@@ -288,6 +289,48 @@ class TestLoadConfig:
         from chico.core.config import ConfigValidationError
 
         with pytest.raises(ConfigValidationError):
+            load_config()
+
+    def test_raises_when_provider_path_is_relative(self, config_file: Path):
+        from chico.core.config import ConfigValidationError
+
+        _write_config(
+            config_file.parent,
+            {
+                "providers": [
+                    {
+                        "name": "kiro",
+                        "type": "kiro",
+                        "level": "project",
+                        "path": "relative/path",
+                    }
+                ],
+                "sources": [],
+                "policy": {"strategy": "safe"},
+            },
+        )
+        with pytest.raises(ConfigValidationError, match="absolute"):
+            load_config()
+
+    def test_provider_path_error_includes_name_and_value(self, config_file: Path):
+        from chico.core.config import ConfigValidationError
+
+        _write_config(
+            config_file.parent,
+            {
+                "providers": [
+                    {
+                        "name": "my-provider",
+                        "type": "kiro",
+                        "level": "project",
+                        "path": "not/absolute",
+                    }
+                ],
+                "sources": [],
+                "policy": {"strategy": "safe"},
+            },
+        )
+        with pytest.raises(ConfigValidationError, match="my-provider"):
             load_config()
 
     def test_multiple_sources(self, config_file: Path):
