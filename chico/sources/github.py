@@ -39,7 +39,13 @@ import os
 import subprocess
 from typing import cast
 
-from github import Github
+from github import (
+    BadCredentialsException,
+    Github,
+    GithubException,
+    RateLimitExceededException,
+    UnknownObjectException,
+)
 from github.ContentFile import ContentFile
 
 from chico.core.source import FetchResult, SourceFetchError
@@ -63,6 +69,82 @@ def _gh_cli_token() -> str | None:
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
     return None
+
+
+def _is_fine_grained_pat(token: str) -> bool:
+    """Return True if token is a fine-grained PAT (github_pat_ prefix)."""
+    return token.startswith("github_pat_")
+
+
+def _auth_error_message(
+    repo: str, token_env: str, token: str | None, method: str
+) -> str:
+    """Build a friendly authentication failure message."""
+    fine_grained_note = ""
+    if token and _is_fine_grained_pat(token):
+        fine_grained_note = (
+            "\n\nNote: your token looks like a fine-grained PAT (github_pat_...).\n"
+            "Fine-grained PATs must have 'Contents: Read' permission explicitly\n"
+            "granted per repository. Classic PATs (ghp_...) with 'repo' scope\n"
+            "are more reliable for private repositories."
+        )
+
+    return (
+        f"Authentication failed for repository '{repo}'.\n\n"
+        f"Your GitHub token was rejected. Here is what you can do:\n\n"
+        f"  1. Set a valid token:  export {token_env}=<your_token>\n"
+        f"  2. Make sure the token has not expired.\n"
+        f"  3. For private repos, use a classic PAT with 'repo' scope\n"
+        f"     or a fine-grained PAT with 'Contents: Read' permission.\n"
+        f"  4. Authenticate via the GitHub CLI:  gh auth login\n"
+        f"{fine_grained_note}\n\n"
+        f"Token resolved via: {method}"
+    )
+
+
+def _not_found_error_message(
+    repo: str, token_env: str, token: str | None, method: str
+) -> str:
+    """Build a friendly not-found message that surfaces the auth angle."""
+    fine_grained_note = ""
+    if token and _is_fine_grained_pat(token):
+        fine_grained_note = (
+            "\n\nNote: your token looks like a fine-grained PAT (github_pat_...).\n"
+            "Fine-grained PATs must explicitly list this repository and grant\n"
+            "'Contents: Read' permission. Consider using a classic PAT instead."
+        )
+
+    return (
+        f"Repository '{repo}' was not found.\n\n"
+        f"If this is a private repository, this is almost certainly an auth issue —\n"
+        f"GitHub returns 404 instead of 403 for private repos to prevent enumeration.\n\n"
+        f"Here is what you can do:\n\n"
+        f"  1. Set a valid token:  export {token_env}=<your_token>\n"
+        f"  2. Make sure the token has 'repo' scope (classic PAT) or\n"
+        f"     'Contents: Read' permission (fine-grained PAT) for this repo.\n"
+        f"  3. Authenticate via the GitHub CLI:  gh auth login\n"
+        f"  4. Double-check the repository name: '{repo}'\n"
+        f"{fine_grained_note}\n\n"
+        f"Token resolved via: {method}"
+    )
+
+
+def _forbidden_error_message(repo: str, token: str | None, method: str) -> str:
+    """Build a friendly 403-forbidden message."""
+    if token and _is_fine_grained_pat(token):
+        return (
+            f"Access denied for repository '{repo}' (HTTP 403).\n\n"
+            f"Your fine-grained PAT does not have the required permissions.\n"
+            f"Make sure 'Contents: Read' is granted for '{repo}'.\n"
+            f"Consider switching to a classic PAT with 'repo' scope.\n\n"
+            f"Token resolved via: {method}"
+        )
+    return (
+        f"Access denied for repository '{repo}' (HTTP 403).\n\n"
+        f"Your token does not have permission to access this repository.\n"
+        f"Make sure your token has 'repo' scope for private repositories.\n\n"
+        f"Token resolved via: {method}"
+    )
 
 
 class GitHubSource:
@@ -126,7 +208,7 @@ class GitHubSource:
             "github.fetch.started",
             extra={"repo": self._repo, "path": self._path, "branch": self._branch},
         )
-        token = self._resolve_token()
+        token, method = self._resolve_token()
 
         try:
             gh = Github(token)
@@ -185,6 +267,37 @@ class GitHubSource:
 
             return FetchResult(version=commit_sha, files=files)
 
+        except BadCredentialsException as exc:
+            msg = _auth_error_message(self._repo, self._token_env, token, method)
+            logger.error(
+                "github.fetch.auth_error", extra={"repo": self._repo, "method": method}
+            )
+            raise SourceFetchError(msg) from exc
+
+        except UnknownObjectException as exc:
+            msg = _not_found_error_message(self._repo, self._token_env, token, method)
+            logger.error("github.fetch.not_found", extra={"repo": self._repo})
+            raise SourceFetchError(msg) from exc
+
+        except RateLimitExceededException as exc:
+            msg = (
+                f"GitHub API rate limit exceeded for repository '{self._repo}'. "
+                f"Wait a moment and try again."
+            )
+            logger.error("github.fetch.rate_limit", extra={"repo": self._repo})
+            raise SourceFetchError(msg) from exc
+
+        except GithubException as exc:
+            if exc.status == 403:
+                msg = _forbidden_error_message(self._repo, token, method)
+            else:
+                msg = f"GitHub API error for repository '{self._repo}' (HTTP {exc.status}): {exc.data}"
+            logger.error(
+                "github.fetch.api_error",
+                extra={"repo": self._repo, "status": exc.status},
+            )
+            raise SourceFetchError(msg) from exc
+
         except Exception as exc:
             logger.error(
                 "github.fetch.error",
@@ -192,15 +305,16 @@ class GitHubSource:
             )
             raise SourceFetchError(str(exc)) from exc
 
-    def _resolve_token(self) -> str | None:
+    def _resolve_token(self) -> tuple[str | None, str]:
         """Resolve the GitHub token using the fallback chain.
 
-        Returns ``None`` when no token is found — unauthenticated requests
-        are passed through to PyGithub, which works for public repositories.
+        Returns ``(token, method)`` where ``method`` describes how the token
+        was found — useful for diagnostic messages when auth fails.
+        Returns ``(None, "none")`` when no token is found.
         """
         if self._token:
             logger.info("github.token.resolved", extra={"method": "explicit"})
-            return self._token
+            return self._token, "explicit"
 
         env_token = os.environ.get(self._token_env)
         if env_token:
@@ -208,12 +322,12 @@ class GitHubSource:
                 "github.token.resolved",
                 extra={"method": "env", "var": self._token_env},
             )
-            return env_token
+            return env_token, f"env:{self._token_env}"
 
         cli_token = _gh_cli_token()
         if cli_token:
             logger.info("github.token.resolved", extra={"method": "gh_cli"})
-            return cli_token
+            return cli_token, "gh_cli"
 
         logger.info("github.token.resolved", extra={"method": "none"})
-        return None
+        return None, "none"

@@ -236,6 +236,144 @@ class TestGitHubSourceFetch:
         assert all("." in k.split("/")[-1] for k in result.files)
 
 
+class TestIsFineGrainedPat:
+    def test_returns_true_for_github_pat_prefix(self):
+        from chico.sources.github import _is_fine_grained_pat
+
+        assert _is_fine_grained_pat("github_pat_abc123") is True
+
+    def test_returns_false_for_classic_ghp_pat(self):
+        from chico.sources.github import _is_fine_grained_pat
+
+        assert _is_fine_grained_pat("ghp_abc123") is False
+
+    def test_returns_false_for_legacy_hex_token(self):
+        from chico.sources.github import _is_fine_grained_pat
+
+        assert _is_fine_grained_pat("a" * 40) is False
+
+
+class TestGitHubAuthErrors:
+    def test_bad_credentials_raises_helpful_error(self):
+        from github import BadCredentialsException
+
+        with patch("chico.sources.github.Github") as mock_gh:
+            mock_gh.return_value.get_repo.side_effect = BadCredentialsException(401, {})
+            with pytest.raises(SourceFetchError, match="Authentication failed"):
+                GitHubSource(name="s", repo="org/repo", path="p/", token="bad").fetch()
+
+    def test_bad_credentials_error_mentions_token_env(self):
+        from github import BadCredentialsException
+
+        with patch("chico.sources.github.Github") as mock_gh:
+            mock_gh.return_value.get_repo.side_effect = BadCredentialsException(401, {})
+            with pytest.raises(SourceFetchError, match="MY_TOKEN"):
+                GitHubSource(
+                    name="s",
+                    repo="org/repo",
+                    path="p/",
+                    token="t",
+                    token_env="MY_TOKEN",
+                ).fetch()
+
+    def test_bad_credentials_mentions_fine_grained_pat_when_applicable(self):
+        from github import BadCredentialsException
+
+        with patch("chico.sources.github.Github") as mock_gh:
+            mock_gh.return_value.get_repo.side_effect = BadCredentialsException(401, {})
+            with pytest.raises(SourceFetchError, match="fine-grained"):
+                GitHubSource(
+                    name="s", repo="org/repo", path="p/", token="github_pat_abc123"
+                ).fetch()
+
+    def test_not_found_error_mentions_private_repo(self):
+        from github import UnknownObjectException
+
+        with patch("chico.sources.github.Github") as mock_gh:
+            mock_gh.return_value.get_repo.side_effect = UnknownObjectException(
+                404, {}, {}
+            )
+            with pytest.raises(SourceFetchError, match="private"):
+                GitHubSource(name="s", repo="org/repo", path="p/", token="t").fetch()
+
+    def test_not_found_error_includes_repo_name(self):
+        from github import UnknownObjectException
+
+        with patch("chico.sources.github.Github") as mock_gh:
+            mock_gh.return_value.get_repo.side_effect = UnknownObjectException(
+                404, {}, {}
+            )
+            with pytest.raises(SourceFetchError, match="org/repo"):
+                GitHubSource(name="s", repo="org/repo", path="p/", token="t").fetch()
+
+    def test_not_found_mentions_fine_grained_pat_when_applicable(self):
+        from github import UnknownObjectException
+
+        with patch("chico.sources.github.Github") as mock_gh:
+            mock_gh.return_value.get_repo.side_effect = UnknownObjectException(
+                404, {}, {}
+            )
+            with pytest.raises(SourceFetchError, match="fine-grained"):
+                GitHubSource(
+                    name="s", repo="org/repo", path="p/", token="github_pat_abc123"
+                ).fetch()
+
+    def test_rate_limit_raises_helpful_error(self):
+        from github import RateLimitExceededException
+
+        with patch("chico.sources.github.Github") as mock_gh:
+            mock_gh.return_value.get_repo.side_effect = RateLimitExceededException(
+                403, {}
+            )
+            with pytest.raises(SourceFetchError, match="rate limit"):
+                GitHubSource(name="s", repo="org/repo", path="p/", token="t").fetch()
+
+    def test_forbidden_with_fine_grained_pat_gives_helpful_error(self):
+        from github import GithubException
+
+        with patch("chico.sources.github.Github") as mock_gh:
+            mock_gh.return_value.get_repo.side_effect = GithubException(
+                403, {"message": "Resource not accessible by personal access token"}, {}
+            )
+            with pytest.raises(SourceFetchError, match="fine-grained"):
+                GitHubSource(
+                    name="s", repo="org/repo", path="p/", token="github_pat_abc123"
+                ).fetch()
+
+    def test_resolve_token_method_included_in_auth_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        from github import BadCredentialsException
+
+        monkeypatch.setenv("GITHUB_TOKEN", "env-bad-token")
+        with patch("chico.sources.github.Github") as mock_gh:
+            mock_gh.return_value.get_repo.side_effect = BadCredentialsException(401, {})
+            with pytest.raises(SourceFetchError, match="env:GITHUB_TOKEN"):
+                GitHubSource(name="s", repo="org/repo", path="p/").fetch()
+
+    def test_forbidden_without_fine_grained_pat_gives_generic_403_error(self):
+        from github import GithubException
+
+        with patch("chico.sources.github.Github") as mock_gh:
+            mock_gh.return_value.get_repo.side_effect = GithubException(
+                403, {"message": "Forbidden"}, {}
+            )
+            with pytest.raises(SourceFetchError, match="HTTP 403"):
+                GitHubSource(
+                    name="s", repo="org/repo", path="p/", token="ghp_abc"
+                ).fetch()
+
+    def test_generic_github_exception_includes_status_and_data(self):
+        from github import GithubException
+
+        with patch("chico.sources.github.Github") as mock_gh:
+            mock_gh.return_value.get_repo.side_effect = GithubException(
+                422, {"message": "Validation failed"}, {}
+            )
+            with pytest.raises(SourceFetchError, match="HTTP 422"):
+                GitHubSource(name="s", repo="org/repo", path="p/", token="t").fetch()
+
+
 class TestGitHubSourceTokenResolution:
     def test_explicit_token_takes_priority(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("GITHUB_TOKEN", "env-token")
