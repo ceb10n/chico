@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `.kiro/` directory double-nesting fix: explicit `provider.path` is now used as-is, without appending `.kiro/` suffix (#18)
 
+### Fixed
+- `provider.path` values that are not absolute now raise a clear `ConfigValidationError` at parse time instead of failing silently at runtime (#26)
+- Test fixtures replaced hardcoded Unix paths with `tmp_path`-derived paths, fixing failures on Windows CI (#26)
+
 ### Refactored
 - State persistence now uses `ResourceRecord` and `LastRunRecord` TypedDicts for type-safe schema definitions (#25)
 
