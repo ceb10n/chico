@@ -9,8 +9,9 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 
-import typer
+from rich.markup import escape
 
+from chico.cli.output import get_console
 from chico.core.state import ResourceRecord, load_state
 
 logger = logging.getLogger("chico")
@@ -26,25 +27,26 @@ def status() -> None:
     logger.info("status.started")
 
     state = load_state()
+    console = get_console()
 
-    typer.echo(f"Status: {state.status}\n")
+    console.print(f"[bold]Status:[/bold] {escape(state.status)}\n")
 
     if state.last_run is None:
-        typer.echo("No previous runs recorded.")
+        console.print("[dim]No previous runs recorded.[/dim]")
     else:
         ts = state.last_run.get("timestamp", "unknown")
         applied = state.last_run.get("applied", 0)
         errors = state.last_run.get("errors", 0)
-        typer.echo(f"Last run: {ts}")
-        typer.echo(f"  Applied: {applied}")
-        typer.echo(f"  Errors:  {errors}")
+        console.print(f"[dim]Last run:[/dim] {escape(str(ts))}")
+        console.print(f"  [dim]Applied:[/dim] {applied}")
+        console.print(f"  [dim]Errors:[/dim]  {errors}")
 
-    typer.echo("")
+    console.print("")
 
     if not state.versions:
-        typer.echo("Sources: no sources tracked yet.")
-        typer.echo("")
-        typer.echo(f"Resources: {len(state.resources)} tracked")
+        console.print("[dim]Sources: no sources tracked yet.[/dim]")
+        console.print("")
+        console.print(f"[dim]Resources:[/dim] {len(state.resources)} tracked")
         logger.info("status.completed")
         return
 
@@ -58,21 +60,24 @@ def status() -> None:
         else:
             untagged.append(r)
 
-    typer.echo(f"Sources ({len(state.versions)}):\n")
+    console.print(f"[bold]Sources ({len(state.versions)}):[/bold]\n")
     for name, version in state.versions.items():
         short_sha = version[:12] if len(version) > 12 else version
         resources = by_source.get(name, [])
         ok = sum(1 for r in resources if r.get("status") == "ok")
         errors = sum(1 for r in resources if r.get("status") == "error")
-        typer.echo(f"  {name}")
-        typer.echo(f"    version:   {short_sha}")
-        typer.echo(f"    resources: {len(resources)} ({ok} ok, {errors} error)")
+        console.print(f"  [bold]{escape(name)}[/bold]")
+        console.print(f"    [dim]version:[/dim]   {escape(short_sha)}")
+        console.print(
+            f"    [dim]resources:[/dim] {len(resources)}"
+            f" ([green]{ok} ok[/green], [red]{errors} error[/red])"
+        )
 
     if untagged:
-        typer.echo("\n  (untagged)")
-        typer.echo(f"    resources: {len(untagged)}")
+        console.print("\n  [dim](untagged)[/dim]")
+        console.print(f"    [dim]resources:[/dim] {len(untagged)}")
 
-    typer.echo("")
-    typer.echo(f"Total resources: {len(state.resources)} tracked")
+    console.print("")
+    console.print(f"[dim]Total resources:[/dim] {len(state.resources)} tracked")
 
     logger.info("status.completed")
