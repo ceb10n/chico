@@ -70,7 +70,7 @@ class TestListEmpty:
 # ── with providers and sources ────────────────────────────────────────────────
 
 
-_FULL_CONFIG = """\
+_FULL_CONFIG_TEMPLATE = """\
 providers:
   - name: kiro
     type: kiro
@@ -78,7 +78,7 @@ providers:
   - name: kiro-local
     type: kiro
     level: project
-    path: /home/user/my-project/.kiro
+    path: {provider_path}
 sources:
   - name: steering
     type: github
@@ -99,9 +99,20 @@ policy:
 
 
 @pytest.fixture()
-def full_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def project_provider_path(tmp_path: Path) -> Path:
+    return tmp_path / "my-project" / ".kiro"
+
+
+@pytest.fixture()
+def full_config(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    project_provider_path: Path,
+) -> Path:
     cfg = tmp_path / "config.yaml"
-    cfg.write_text(_FULL_CONFIG)
+    cfg.write_text(
+        _FULL_CONFIG_TEMPLATE.format(provider_path=project_provider_path.as_posix())
+    )
     monkeypatch.setattr("chico.core.config.CONFIG_FILE", cfg)
     return cfg
 
@@ -127,9 +138,11 @@ class TestListWithConfig:
         result = runner.invoke(app, ["list"])
         assert "global" in result.output
 
-    def test_shows_project_provider_path(self, chico_home, full_config):
+    def test_shows_project_provider_path(
+        self, chico_home, full_config, project_provider_path
+    ):
         result = runner.invoke(app, ["list"])
-        assert "/home/user/my-project/.kiro" in result.output
+        assert project_provider_path.as_posix() in result.output
 
     def test_shows_source_name(self, chico_home, full_config):
         result = runner.invoke(app, ["list"])
