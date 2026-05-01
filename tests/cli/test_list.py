@@ -100,7 +100,7 @@ policy:
 
 @pytest.fixture()
 def project_provider_path(tmp_path: Path) -> Path:
-    return tmp_path / "my-project" / ".kiro"
+    return tmp_path.resolve() / "my-project" / ".kiro"
 
 
 @pytest.fixture()
@@ -109,7 +109,7 @@ def full_config(
     monkeypatch: pytest.MonkeyPatch,
     project_provider_path: Path,
 ) -> Path:
-    cfg = tmp_path / "config.yaml"
+    cfg = tmp_path.resolve() / "config.yaml"
     cfg.write_text(
         _FULL_CONFIG_TEMPLATE.format(provider_path=project_provider_path.as_posix())
     )
