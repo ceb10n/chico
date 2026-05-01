@@ -23,8 +23,31 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from typing import NotRequired, TypedDict
 
 from chico.core.paths import STATE_FILE
+
+
+class ResourceRecord(TypedDict):
+    """A snapshot of a single resource recorded during an apply run.
+
+    ``source`` is optional for backward compatibility with state files written
+    before per-source tracking was introduced.
+    """
+
+    resource_id: str
+    status: str
+    message: str
+    source: NotRequired[str]
+
+
+class LastRunRecord(TypedDict):
+    """Metadata persisted after each apply run."""
+
+    timestamp: str
+    plan_id: str
+    applied: int
+    errors: int
 
 
 @dataclass
@@ -46,8 +69,8 @@ class State:
     """
 
     status: str = "idle"
-    last_run: dict | None = None
-    resources: list[dict] = field(default_factory=list)
+    last_run: LastRunRecord | None = None
+    resources: list[ResourceRecord] = field(default_factory=list)
     versions: dict[str, str] = field(default_factory=dict)
 
     def record_version(self, source_name: str, version: str) -> None:

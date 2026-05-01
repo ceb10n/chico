@@ -30,7 +30,7 @@ from chico.core.plan import (
     _resolve_kiro_dir,
 )
 from chico.core.resource import Diff, Resource, Result, ResultStatus
-from chico.core.state import load_state, save_state
+from chico.core.state import LastRunRecord, ResourceRecord, load_state, save_state
 
 logger = logging.getLogger("chico")
 
@@ -194,19 +194,19 @@ def _persist_state(
     ok = sum(1 for r in results if r.ok)
     errors = sum(1 for r in results if r.status == ResultStatus.ERROR)
 
-    state.last_run = {
-        "timestamp": datetime.now(UTC).isoformat(),
-        "plan_id": plan.plan_id,
-        "applied": ok,
-        "errors": errors,
-    }
+    state.last_run = LastRunRecord(
+        timestamp=datetime.now(UTC).isoformat(),
+        plan_id=plan.plan_id,
+        applied=ok,
+        errors=errors,
+    )
     state.resources = [
-        {
-            "resource_id": r.resource_id,
-            "status": str(r.status),
-            "message": r.message,
-            "source": source_name,
-        }
+        ResourceRecord(
+            resource_id=r.resource_id,
+            status=str(r.status),
+            message=r.message,
+            source=source_name,
+        )
         for r, source_name in zip(results, result_sources, strict=True)
     ]
 

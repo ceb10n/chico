@@ -11,7 +11,7 @@ from collections import defaultdict
 
 import typer
 
-from chico.core.state import load_state
+from chico.core.state import ResourceRecord, load_state
 
 logger = logging.getLogger("chico")
 
@@ -49,8 +49,8 @@ def status() -> None:
         return
 
     # Group resources by source
-    by_source: dict[str, list[dict]] = defaultdict(list)
-    untagged: list[dict] = []
+    by_source: dict[str, list[ResourceRecord]] = defaultdict(list)
+    untagged: list[ResourceRecord] = []
     for r in state.resources:
         source_name = r.get("source", "")
         if source_name:
