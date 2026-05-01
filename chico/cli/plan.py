@@ -11,12 +11,20 @@ import logging
 import typer
 from rich.markup import escape
 
-from chico.cli.output import get_console, get_err_console
+from chico.cli.output import get_console, get_err_console, run_with_progress
 from chico.core.config import ConfigNotFoundError, ConfigValidationError, load_config
 from chico.core.plan import compute_plan
 from chico.core.resource import ChangeType
 
 logger = logging.getLogger("chico")
+
+_PLAN_MESSAGES: list[str] = [
+    "🔍  Fetching desired state...",
+    "🛰️  Reaching out to sources...",
+    "🧮  Computing differences...",
+    "⚙️  Analyzing changes...",
+    "🔎  Almost there...",
+]
 
 _CHANGE_SYMBOL: dict[str, str] = {
     ChangeType.ADD: "[green]+[/green]",
@@ -48,8 +56,12 @@ def plan(source: str | None = None) -> None:
         get_err_console().print(f"[bold red]Error:[/bold red] {escape(str(exc))}")
         raise typer.Exit(1) from exc
 
+    console = get_console()
+
     try:
-        result = compute_plan(config)
+        result = run_with_progress(
+            console, _PLAN_MESSAGES, lambda: compute_plan(config)
+        )
     except Exception as exc:
         logger.error("plan.failed", extra={"error": str(exc)})
         get_err_console().print(f"[bold red]Error:[/bold red] {escape(str(exc))}")
@@ -59,8 +71,6 @@ def plan(source: str | None = None) -> None:
         "plan.completed",
         extra={"plan_id": result.plan_id, "changes": len(result.changes)},
     )
-
-    console = get_console()
 
     if not result.has_changes:
         console.print("[dim]No changes. Your configuration is up to date.[/dim]")

@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `chico list` command to display all configured sources and providers (#21)
 - Per-source resource breakdown in `chico status` output (#22)
+- Rich-styled CLI output across all commands: coloured change symbols, bold headers, dim labels, and `[bold red]Error:[/bold red]` prefixes
+- Cycling emoji progress messages during `plan`, `apply`, and `sync` operations (runs in a background thread, updates every 2.5 s)
+- Actionable GitHub auth error messages: detects fine-grained PATs (`github_pat_` prefix) vs classic tokens and suggests which scopes or permissions are missing
+- `run_with_progress()` helper in `chico.cli.output` for progress cycling over any blocking callable
 
 ### Changed
 - `.kiro/` directory double-nesting fix: explicit `provider.path` is now used as-is, without appending `.kiro/` suffix (#18)
@@ -20,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Refactored
 - State persistence now uses `ResourceRecord` and `LastRunRecord` TypedDicts for type-safe schema definitions (#25)
+- All CLI commands migrated from `typer.echo` to `rich.console.Console` constructed at call time for correct `CliRunner` capture
 
 ## [1.1.0b1] - 2026-04-29
 

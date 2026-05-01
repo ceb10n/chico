@@ -11,12 +11,20 @@ import logging
 import typer
 from rich.markup import escape
 
-from chico.cli.output import get_console, get_err_console
+from chico.cli.output import get_console, get_err_console, run_with_progress
 from chico.core.apply import execute_apply
 from chico.core.config import ConfigNotFoundError, ConfigValidationError, load_config
 from chico.core.resource import ChangeType, ResultStatus
 
 logger = logging.getLogger("chico")
+
+_SYNC_MESSAGES: list[str] = [
+    "🔄  Syncing configuration...",
+    "🛰️  Fetching desired state...",
+    "🧮  Computing differences...",
+    "🚀  Applying changes...",
+    "⚡  Finishing up...",
+]
 
 _CHANGE_SYMBOL: dict[str, str] = {
     ChangeType.ADD: "[green]+[/green]",
@@ -50,14 +58,16 @@ def sync(source: str | None = None) -> None:
         get_err_console().print(f"[bold red]Error:[/bold red] {escape(str(exc))}")
         raise typer.Exit(1) from exc
 
+    console = get_console()
+
     try:
-        result = execute_apply(config)
+        result = run_with_progress(
+            console, _SYNC_MESSAGES, lambda: execute_apply(config)
+        )
     except Exception as exc:
         logger.error("sync.failed", extra={"error": str(exc)})
         get_err_console().print(f"[bold red]Error:[/bold red] {escape(str(exc))}")
         raise typer.Exit(1) from exc
-
-    console = get_console()
 
     if not result.plan.has_changes:
         console.print("[dim]Nothing to sync. Your configuration is up to date.[/dim]")
