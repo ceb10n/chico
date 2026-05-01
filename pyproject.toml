@@ -7,7 +7,7 @@ packages = ["chico"]
 
 [project]
 name = "chico-ai"
-version = "1.1.0b1"
+version = "1.1.0b2"
 description = "Agent-native configuration control plane"
 license = { file = "LICENSE" }
 readme = "README.md"

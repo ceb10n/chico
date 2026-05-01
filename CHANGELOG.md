@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0b2] - 2026-05-01
+
 ### Added
 - `chico list` command to display all configured sources and providers (#21)
 - Per-source resource breakdown in `chico status` output (#22)
@@ -50,7 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - State management with `~/.chico/state.json`
 - Structured JSON logging with rotation to `~/.chico/chico.log`
 
-[Unreleased]: https://github.com/ceb10n/chico/compare/v1.1.0b1...HEAD
+[Unreleased]: https://github.com/ceb10n/chico/compare/v1.1.0b2...HEAD
+[1.1.0b2]: https://github.com/ceb10n/chico/compare/v1.1.0b1...v1.1.0b2
 [1.1.0b1]: https://github.com/ceb10n/chico/compare/v1.0.1...v1.1.0b1
 [1.0.1]: https://github.com/ceb10n/chico/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/ceb10n/chico/releases/tag/v1.0.0
